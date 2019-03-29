@@ -11,7 +11,6 @@
 	</organization>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<guidelines.project.dir>../guidelines-cris-managers</guidelines.project.dir>
 		<fully.qualified.main.class.name>org.eurocris.openaire.cris.validator.CRISValidator</fully.qualified.main.class.name>
 	</properties>
 	<dependencies>
@@ -25,6 +24,12 @@
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.openaire</groupId>
+			<artifactId>guidelines-cris-managers</artifactId>
+			<version>1.1.2-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -37,63 +42,6 @@
 					<target>1.8</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.jvnet.jaxb2.maven2</groupId>
-				<artifactId>maven-jaxb22-plugin</artifactId>
-				<version>0.10.0</version>
-				<executions>
-					<execution>
-                        <phase>generate-sources</phase>
-						<goals>
-							<goal>generate</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<extension>true</extension>
-					<schemaDirectory>${guidelines.project.dir}/schemas</schemaDirectory>
-					<schemaIncludes>
-						<schemaInclude>cached/oai-identifier.xsd</schemaInclude>
-						<schemaInclude>cached/OAI-PMH.xsd</schemaInclude>
-						<!-- schemaInclude>openaire-cerif-profile.xsd</schemaInclude -->
-					</schemaIncludes>
-					<bindingDirectory>src/main/xjc</bindingDirectory>
-					<bindingIncludes>
-						<include>*.xjc</include>
-					</bindingIncludes>
-					<encoding>UTF-8</encoding>
-					<locale>en</locale>
-					<args>
-						<arg>-Xannotate</arg>
-					</args>
-					<plugins>
-						<plugin>
-							<groupId>org.jvnet.jaxb2_commons</groupId>
-							<artifactId>jaxb2-basics-annotate</artifactId>
-							<version>1.0.4</version>
-						</plugin>
-					</plugins>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.1</version>
-				<executions>
-					<execution>
-						<id>add-source</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sources>
-								<source>${project.build.directory}/generated-sources/xjc</source>
-							</sources>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -114,15 +62,39 @@
                                     <include>**/*.xsd</include>
                                     <targetPath>schemas</targetPath>
                                 </resource>
-                                <resource>
-                                    <directory>${guidelines.project.dir}/schemas/</directory>
-                                    <include>**/*.xsd</include>
-                                    <targetPath>schemas</targetPath>
-                                </resource>
         					</resources>
         				</configuration>
                     </execution>
                 </executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>unpack</id>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<overWriteIfNewer>true</overWriteIfNewer>
+							<artifactItems>
+								<artifactItem>
+									<groupId>eu.openaire</groupId>
+									<artifactId>guidelines-cris-managers</artifactId>
+									<outputDirectory>${project.build.directory}/classes</outputDirectory>
+									<includes>schemas/**/*.xsd</includes>
+								</artifactItem>
+								<artifactItem>
+									<groupId>eu.openaire</groupId>
+									<artifactId>guidelines-cris-managers</artifactId>
+									<outputDirectory>${project.build.directory}/guidelines-cris-managers</outputDirectory>
+									<includes>samples/**/*.xml</includes>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
