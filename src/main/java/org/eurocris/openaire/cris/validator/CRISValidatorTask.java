@@ -40,15 +40,14 @@ public class CRISValidatorTask implements Runnable {
     public void run() {
         try {
             CRISValidator.getEndpoint().set(new OAIPMHEndpoint(new URL(endpoint), getParserSchema(), new FileLoggingConnectionStreamFactory( "data/" + endpoint )));
-            JUnitCore.main( CRISValidator.class.getName() );
-//            CRISValidator object = new CRISValidator();
-//            object.executeTests();
+            CRISValidator object = new CRISValidator();
+            object.executeTests();
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (SAXException e) {
             e.printStackTrace();
-//        } catch (MissingArgumentException e) {
-//            e.printStackTrace();
+        } catch (MissingArgumentException e) {
+            e.printStackTrace();
         }
 
     }

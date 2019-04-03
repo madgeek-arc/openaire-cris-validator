@@ -38,15 +38,17 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
 import org.apache.commons.cli.MissingArgumentException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
 import org.eurocris.openaire.cris.validator.tree.CERIFNode;
 import org.eurocris.openaire.cris.validator.util.CheckingIterable;
 import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
 import org.eurocris.openaire.cris.validator.util.XmlUtils;
-import org.junit.FixMethodOrder;
+//import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runners.MethodSorters;
+//import org.junit.runner.JUnitCore;
+//import org.junit.runners.MethodSorters;
 import org.openarchives.oai._2.DescriptionType;
 import org.openarchives.oai._2.HeaderType;
 import org.openarchives.oai._2.IdentifyType;
@@ -70,8 +72,10 @@ import org.xml.sax.SAXParseException;
  * @see <a href="https://github.com/openaire/guidelines-cris-managers">the github project of the specification, XML Schema and examples</a>
  * @see <a href="https://github.com/jdvorak001/openaire-cris-validator">this project on GitHub</a>
  */
-@FixMethodOrder( value=MethodSorters.NAME_ASCENDING )
+//@FixMethodOrder( value=MethodSorters.NAME_ASCENDING )
 public class CRISValidator {
+
+	private static final Logger logger = LogManager.getLogger(CRISValidator.class);
 	
 	/**
 	 * The spec of the set of equipments.
@@ -140,18 +144,18 @@ public class CRISValidator {
 	 */
 	public static final ConnectionStreamFactory CONN_STREAM_FACTORY = new FileLoggingConnectionStreamFactory( "data" );
 	
-	/**
-	 * The main method: used for running the JUnit4 test suite from the command line.
-	 * The first command line argument should be the URL of the endpoint to test.
-	 * @param args command line arguments
-	 * @throws Exception any uncaught exception
-	 */
-	public static void main( final String[] args ) throws Exception {
-		final String endpointUrl = ( args.length > 0 ) ? args[0] : null;
-		final URL endpointBaseUrl = new URL( endpointUrl );
-		endpoint.set(new OAIPMHEndpoint( endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY ));
-		JUnitCore.main( CRISValidator.class.getName() );
-	}
+//	/**
+//	 * The main method: used for running the JUnit4 test suite from the command line.
+//	 * The first command line argument should be the URL of the endpoint to test.
+//	 * @param args command line arguments
+//	 * @throws Exception any uncaught exception
+//	 */
+//	public static void main( final String[] args ) throws Exception {
+//		final String endpointUrl = ( args.length > 0 ) ? args[0] : null;
+//		final URL endpointBaseUrl = new URL( endpointUrl );
+//		endpoint.set(new OAIPMHEndpoint( endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY ));
+//		JUnitCore.main( CRISValidator.class.getName() );
+//	}
 
 	private static ThreadLocal<OAIPMHEndpoint> endpoint = new ThreadLocal<>();
 
@@ -159,6 +163,26 @@ public class CRISValidator {
 		return endpoint;
 	}
 
+	public void executeTests() {
+		try {
+			check000_Identify();
+			check010_MetadataFormats();
+			check020_Sets();
+			check100_CheckPublications();
+			check200_CheckProducts();
+			check300_CheckPatents();
+			check400_CheckPersons();
+			check500_CheckOrgUnits();
+			check600_CheckProjects();
+			check700_CheckFundings();
+			check800_CheckEquipment();
+			check900_CheckEvents();
+			check990_CheckReferentialIntegrityAndFunctionalDependency();
+
+		} catch (Throwable e) {
+			logger.error("ERROR:", e);
+		}
+	}
 
 	/**
 	 * Set up the test suite.
@@ -262,7 +286,7 @@ public class CRISValidator {
 	 * Ask for ?verb=Identity and test it for consistence – checks (1).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check000_Identify() throws Exception {
 		final IdentifyType identify = endpoint.get().callIdentify();
 		CheckingIterable<DescriptionType> checker = CheckingIterable.over( identify.getDescription() );
@@ -339,16 +363,27 @@ public class CRISValidator {
 					try {
 						final DocumentBuilder db = dbf.newDocumentBuilder();
 						final String schemaUrl = mf.getSchema();
-						assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) );
-						assertTrue( "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2)", schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) );
+						if (!schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT )) {
+							logger.warn(String.format("Schema url: %s - should start with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMAS_ROOT));
+							logger.error("Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2)");
+						}
+						if (!schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME )) {
+							logger.warn(String.format("Schema url: %s - should end with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMA_FILENAME));
+							logger.error("The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2)");
+						}
+//						assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) );
+//						assertTrue( "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2)", schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) );
 						final String realSchemaUrl = ( schemaUrl.equals( CURRENT_XML_SCHEMA_URL_PREFIX + "openaire-cerif-profile.xsd" ) ) 
 									? this.getClass().getResource( "/schemas/openaire-cerif-profile.xsd" ).toExternalForm()
 									: schemaUrl;
-						System.out.println( "Fetching " + realSchemaUrl );
+						logger.info( "Fetching " + realSchemaUrl );
 						final Document doc = db.parse( realSchemaUrl );
 						final Element schemaRootEl = doc.getDocumentElement();
 						final String targetNsUri = schemaRootEl.getAttribute( "targetNamespace" );
-						assertEquals( "The schema does not have the advertised target namespace URI (2)", mf.getMetadataNamespace(), targetNsUri );
+						if (!mf.getMetadataNamespace().equals(targetNsUri)) {
+							logger.error("The schema does not have the advertised target namespace URI (2)");
+						}
+//						assertEquals( "The schema does not have the advertised target namespace URI (2)", mf.getMetadataNamespace(), targetNsUri );
 					} catch ( final ParserConfigurationException | SAXException | IOException e ) {
 						throw new IllegalStateException( e ); 
 					}
@@ -365,7 +400,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListSets and test it for consistence – checks (3).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check020_Sets() throws Exception {
 		CheckingIterable<SetType> checker = CheckingIterable.over( endpoint.get().callListSets() );
 		checker = checker.checkUnique( SetType::getSetSpec, "setSpec not unique" );
@@ -401,7 +436,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the products set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check100_CheckPublications() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PUBLICATIONS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Publication" );
@@ -412,7 +447,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the publications set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check200_CheckProducts() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PRODUCTS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Product" );
@@ -423,7 +458,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the patents set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check300_CheckPatents() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PATENTS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Patent" );
@@ -434,7 +469,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the persons set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check400_CheckPersons() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PERSONS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Person" );
@@ -445,7 +480,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the organisation units set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check500_CheckOrgUnits() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_ORGUNITS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "OrgUnit" );
@@ -456,7 +491,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the projects set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check600_CheckProjects() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PROJECTS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Project" );
@@ -467,7 +502,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the fundings set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check700_CheckFundings() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_FUNDING__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Funding" );
@@ -478,7 +513,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the equipment set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check800_CheckEquipment() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Equipment" );
@@ -489,7 +524,7 @@ public class CRISValidator {
 	 * Ask for ?verb=ListRecords on the events set and test it for consistence – checks (5).
 	 * @throws Exception on any unexpected circumstance
 	 */
-	@Test
+//	@Test
 	public void check900_CheckEvents() throws Exception {
 		final Iterable<RecordType> records = endpoint.get().callListRecords( OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_EVENTS__SET_SPEC, null, null );
 		final CheckingIterable<RecordType> checker = buildCommonCheckersChain( records, "Event" );
@@ -579,7 +614,7 @@ public class CRISValidator {
 	/**
 	 * Test the accummulated data for consistence – checks (5a) and (5b).
 	 */
-	@Test
+//	@Test
 	public void check990_CheckReferentialIntegrityAndFunctionalDependency() {
 		for ( final Map.Entry<String, CERIFNode> entry : recordsByOaiIdentifier.entrySet() ) {
 			final String oaiIdentifier = entry.getKey();
@@ -642,7 +677,7 @@ public class CRISValidator {
 					final String msg = exception.getMessage();
 					if ( msg.startsWith( "cvc-pattern-valid: " ) ) {
 						patternValidErrorSignalled = true;
-						System.err.println( "In " + elString + ": " + msg );
+						logger.error( "In " + elString + ": " + msg );
 					} else {
 						if (!( patternValidErrorSignalled && msg.startsWith( "cvc-complex-type.2.2: " ) )) {
 							throw exception;
