@@ -1,6 +1,7 @@
 package org.eurocris.openaire.cris.validator;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -15,10 +16,11 @@ public class Job {
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, String> rules = null;
+    private Map<String, String> rules = new LinkedHashMap<>();
 
 
-    Job() {}
+    Job() {
+    }
 
     Job(String url, String user) {
         this.url = url;
