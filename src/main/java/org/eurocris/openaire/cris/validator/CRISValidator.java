@@ -17,6 +17,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -151,7 +152,7 @@ public class CRISValidator {
      *
      * @param methodName
      * @return
-     * @throws NoSuchMethodException
+     * @throws NoSuchMethodException when the given method name is wrong.
      */
     public String invokeMethod(String methodName) throws NoSuchMethodException {
         Method method = CRISValidator.class.getMethod(methodName);
@@ -232,7 +233,7 @@ public class CRISValidator {
      * Create the schema for the second-phase validation.
      *
      * @return the compound schema
-     * @throws SAXException when problem reading the schema
+     * @throws IllegalStateException when problem reading the schema
      */
     protected static synchronized Schema getValidatorSchema() {
         if (validatorSchema == null) {
@@ -281,9 +282,11 @@ public class CRISValidator {
     /**
      * Ask for ?verb=Identity and test it for consistence – checks (1).
      *
-     * @throws Exception on any unexpected circumstance
+     * @throws JAXBException
+     * @throws SAXException
+     * @throws IOException
      */
-    public void check000_Identify() throws Exception {
+    public void check000_Identify() throws JAXBException, SAXException, IOException {
         final IdentifyType identify = endpoint.get().callIdentify();
         CheckingIterable<DescriptionType> checker = CheckingIterable.over(identify.getDescription());
         checker = checker.checkContainsOne(new Predicate<DescriptionType>() {
@@ -338,9 +341,11 @@ public class CRISValidator {
     /**
      * Ask for ?verb=ListMetadataFormats and test it for consistence – checks (2).
      *
-     * @throws Exception on any unexpected circumstance
+     * @throws JAXBException
+     * @throws SAXException
+     * @throws IOException
      */
-    public void check010_MetadataFormats() throws Exception {
+    public void check010_MetadataFormats() throws JAXBException, SAXException, IOException {
         CheckingIterable<MetadataFormatType> checker = CheckingIterable.over(endpoint.get().callListMetadataFormats().getMetadataFormat());
         checker = checker.checkUnique(MetadataFormatType::getMetadataPrefix, "Metadata prefix not unique");
         checker = checker.checkUnique(MetadataFormatType::getMetadataNamespace, "Metadata namespace not unique");
