@@ -1,6 +1,6 @@
 package org.eurocris.openaire.cris.validator.service;
 
-import org.eurocris.openaire.cris.validator.Job;
+import org.eurocris.openaire.cris.validator.model.Job;
 
 import java.util.List;
 import java.util.Optional;

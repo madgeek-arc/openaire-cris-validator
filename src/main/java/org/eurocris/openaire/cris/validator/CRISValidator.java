@@ -1,6 +1,5 @@
 package org.eurocris.openaire.cris.validator;
 
-import org.apache.commons.cli.MissingArgumentException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
@@ -48,14 +47,12 @@ import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 
 /**
  * Validating a given OAI-PMH endpoint for compliance with the OpenAIRE Guidelines for CRIS Managers 1.1.
- * This is organized as a JUnit4 test suite that works over a given OAI-PMH endpoint.
  *
  * @author jdvorak001
  * @see <a href="https://openaire-guidelines-for-cris-managers.readthedocs.io/en/latest/">the text of the specification</a>
  * @see <a href="https://github.com/openaire/guidelines-cris-managers">the github project of the specification, XML Schema and examples</a>
  * @see <a href="https://github.com/jdvorak001/openaire-cris-validator">this project on GitHub</a>
  */
-//@FixMethodOrder( value=MethodSorters.NAME_ASCENDING )
 public class CRISValidator {
 
     private static final Logger logger = LogManager.getLogger(CRISValidator.class);
@@ -123,11 +120,9 @@ public class CRISValidator {
     public static final String OPENAIRE_CERIF_SCHEMA_FILENAME = "openaire-cerif-profile.xsd";
 
     /**
-     * The connection stream factory to use for getting the response stream from a connection.
+     * Method names used for the validation. (The methods are executed using reflection)
+     * (*Can potentially become a user defined list of validation methods)
      */
-    public static final ConnectionStreamFactory CONN_STREAM_FACTORY = new FileLoggingConnectionStreamFactory("data");
-
-
     protected static final String[] methods = new String[]{
             "check000_Identify",
             "check010_MetadataFormats",
@@ -150,6 +145,13 @@ public class CRISValidator {
         return endpoint;
     }
 
+    /**
+     * Invokes the validation method named {@param methodName}.
+     *
+     * @param methodName
+     * @return
+     * @throws NoSuchMethodException
+     */
     public String invokeMethod(String methodName) throws NoSuchMethodException {
         Method method = CRISValidator.class.getMethod(methodName);
         String ret = "ok";
@@ -161,6 +163,11 @@ public class CRISValidator {
         return ret;
     }
 
+    /**
+     * Method that executes the validation tests, gathers their output and returns them at a {@link Map}.
+     *
+     * @return {@link Map}
+     */
     public Map<String, String> executeTests() {
         Map<String, String> methodResults = new TreeMap<>();
         try {
@@ -174,22 +181,18 @@ public class CRISValidator {
     }
 
     /**
-     * Set up the test suite.
+     * Set up a CRIS Validation for the URL {@param endpointUrl}.
+     * The parameter {@param id} must be unique among simultaneous validations.
      *
-     * @throws MalformedURLException    on an invalid endpoint URL
-     * @throws MissingArgumentException when the endpoint URL is not specified
-     * @throws SAXException             when the parser schema cannot be created
+     * @param endpointUrl
+     * @param id
+     * @throws MalformedURLException
+     * @throws SAXException
      */
-    public CRISValidator() throws MalformedURLException, MissingArgumentException, SAXException {
-        if (endpoint.get() == null) {
-            final String endpointPropertyKey = "endpoint.to.validate";
-            final String endpointUrl = System.getProperty(endpointPropertyKey);
-            if (endpointUrl == null) {
-                throw new MissingArgumentException("Please specify the OAI-PMH endpoint URL as the value of the " + endpointPropertyKey + " system property or as the first argument on the command line");
-            }
-            final URL endpointBaseUrl = new URL(endpointUrl);
-            endpoint.set(new OAIPMHEndpoint(endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY));
-        }
+    public CRISValidator(String endpointUrl, String id) throws MalformedURLException, SAXException {
+        endpoint.set(
+                new OAIPMHEndpoint(new URL(endpointUrl), getParserSchema(), new FileLoggingConnectionStreamFactory("data/" + id))
+        );
     }
 
     /**
@@ -279,7 +282,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check000_Identify() throws Exception {
         final IdentifyType identify = endpoint.get().callIdentify();
         CheckingIterable<DescriptionType> checker = CheckingIterable.over(identify.getDescription());
@@ -337,7 +339,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check010_MetadataFormats() throws Exception {
         CheckingIterable<MetadataFormatType> checker = CheckingIterable.over(endpoint.get().callListMetadataFormats().getMetadataFormat());
         checker = checker.checkUnique(MetadataFormatType::getMetadataPrefix, "Metadata prefix not unique");
@@ -371,7 +372,7 @@ public class CRISValidator {
                             logger.error(String.format("Schema url: %s - should end with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMA_FILENAME));
                             throw new RuntimeException("The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2)");
                         }
-                        final String realSchemaUrl = (schemaUrl.equals(CURRENT_XML_SCHEMA_URL_PREFIX + "openaire-cerif-profile.xsd"))
+                        final String realSchemaUrl = (schemaUrl.equals(CURRENT_XML_SCHEMA_URL_PREFIX + OPENAIRE_CERIF_SCHEMA_FILENAME))
                                 ? this.getClass().getResource("/schemas/openaire-cerif-profile.xsd").toExternalForm()
                                 : schemaUrl;
                         logger.info("Fetching " + realSchemaUrl);
@@ -399,7 +400,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check020_Sets() throws Exception {
         CheckingIterable<SetType> checker = CheckingIterable.over(endpoint.get().callListSets());
         checker = checker.checkUnique(SetType::getSetSpec, "setSpec not unique");
@@ -439,7 +439,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check100_CheckPublications() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PUBLICATIONS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Publication");
@@ -451,7 +450,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check200_CheckProducts() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PRODUCTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Product");
@@ -463,7 +461,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check300_CheckPatents() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PATENTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Patent");
@@ -475,7 +472,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check400_CheckPersons() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PERSONS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Person");
@@ -487,7 +483,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check500_CheckOrgUnits() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_ORGUNITS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "OrgUnit");
@@ -499,7 +494,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check600_CheckProjects() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PROJECTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Project");
@@ -511,7 +505,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check700_CheckFundings() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_FUNDING__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Funding");
@@ -523,7 +516,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check800_CheckEquipment() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Equipment");
@@ -535,7 +527,6 @@ public class CRISValidator {
      *
      * @throws Exception on any unexpected circumstance
      */
-//	@Test
     public void check900_CheckEvents() throws Exception {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_EVENTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Event");
@@ -633,12 +624,11 @@ public class CRISValidator {
     /**
      * Test the accummulated data for consistence – checks (5a) and (5b).
      */
-//	@Test
     public void check990_CheckReferentialIntegrityAndFunctionalDependency() {
         for (final Map.Entry<String, CERIFNode> entry : recordsByOaiIdentifier.entrySet()) {
             final String oaiIdentifier = entry.getKey();
             final CERIFNode node = entry.getValue();
-            // for all harvested CERIF data, check the children of the main objects (no need to check the objects themselves, they satisfy all checks trivially)
+            // for all harvested CERIF data, check the children of the MainForTesting objects (no need to check the objects themselves, they satisfy all checks trivially)
             for (final CERIFNode node3 : node.getChildren(null)) {
                 lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(node3, oaiIdentifier);
             }

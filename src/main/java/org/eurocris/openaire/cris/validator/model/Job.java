@@ -1,4 +1,4 @@
-package org.eurocris.openaire.cris.validator;
+package org.eurocris.openaire.cris.validator.model;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -19,10 +19,13 @@ public class Job {
     private Map<String, String> rules = new LinkedHashMap<>();
 
 
-    Job() {
+    public Job() {
+        this.id = UUID.randomUUID().toString();
+        this.status = "pending";
+        this.dateSubmitted = new Date();
     }
 
-    Job(String url, String user) {
+    public Job(String url, String user) {
         this.url = url;
         this.user = user;
 

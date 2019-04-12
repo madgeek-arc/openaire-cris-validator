@@ -1,8 +1,8 @@
-package org.eurocris.openaire.cris.validator.listeners;
+package org.eurocris.openaire.cris.validator.listener;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eurocris.openaire.cris.validator.Job;
+import org.eurocris.openaire.cris.validator.model.Job;
 import org.eurocris.openaire.cris.validator.service.JobDao;
 
 import java.util.Date;

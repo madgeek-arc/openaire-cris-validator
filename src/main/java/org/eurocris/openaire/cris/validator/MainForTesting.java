@@ -2,8 +2,10 @@ package org.eurocris.openaire.cris.validator;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eurocris.openaire.cris.validator.listeners.StatusListener;
-import org.eurocris.openaire.cris.validator.listeners.TaskListener;
+import org.eurocris.openaire.cris.validator.listener.StatusListener;
+import org.eurocris.openaire.cris.validator.listener.TaskListener;
+import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.service.CRISValidatorTask;
 import org.eurocris.openaire.cris.validator.service.JobDao;
 import org.eurocris.openaire.cris.validator.service.MapJobDao;
 
@@ -11,12 +13,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class CRISValidatorExecutor {
+/**
+ * Class containing a main method for testing/debugging the Validator.
+ */
+public class MainForTesting {
 
-    private static final Logger logger = LogManager.getLogger(CRISValidatorExecutor.class);
+    public static final Logger logger = LogManager.getLogger(MainForTesting.class);
 
     public static void main(String[] args) {
-        ExecutorService executor = Executors.newFixedThreadPool(2); // TODO: set number of threads
+        ExecutorService executor = Executors.newFixedThreadPool(4);
 
         JobDao dao = new MapJobDao();
 

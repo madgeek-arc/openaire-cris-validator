@@ -1,4 +1,4 @@
-package org.eurocris.openaire.cris.validator.listeners;
+package org.eurocris.openaire.cris.validator.listener;
 
 public interface TaskListener<T> {
 
