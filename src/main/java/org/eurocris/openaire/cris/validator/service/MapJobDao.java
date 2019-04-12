@@ -34,6 +34,52 @@ public class MapJobDao implements JobDao {
     }
 
     @Override
+    public List<Job> getJobs(String userId, String validationStatus) {
+        List<Job> jobsList = new LinkedList<>();
+        for (Map.Entry<String, Job> entry : jobs.entrySet()) {
+            if (entry.getValue().getUser().equals(userId) && entry.getValue().getStatus().equals(validationStatus)) {
+                jobsList.add(entry.getValue());
+            }
+        }
+        return jobsList;
+    }
+
+    @Override
+    public List<Job> getJobs(String userId, int offset, int size) {
+        List<Job> allUserJobs = getJobs(userId);
+        int to = offset + size;
+        return allUserJobs.subList(offset, to > allUserJobs.size() ? allUserJobs.size() : to);
+    }
+
+    @Override
+    public List<Job> getJobs(String userId, Date dateFrom, Date dateTo) {
+        List<Job> jobsList = new LinkedList<>();
+        for (Map.Entry<String, Job> entry : jobs.entrySet()) {
+            if (entry.getValue().getUser().equals(userId)
+                    && entry.getValue().getDateSubmitted().after(dateFrom)
+                    && entry.getValue().getDateSubmitted().before(dateTo)) {
+                jobsList.add(entry.getValue());
+            }
+        }
+        return jobsList;
+    }
+
+    @Override
+    public List<Job> getJobs(String userId, int offset, int size, Date dateFrom, Date dateTo, String validationStatus) {
+        List<Job> jobsList = new LinkedList<>();
+        for (Map.Entry<String, Job> entry : jobs.entrySet()) {
+            if (entry.getValue().getUser().equals(userId)
+                    && entry.getValue().getStatus().equals(validationStatus)
+                    && entry.getValue().getDateSubmitted().after(dateFrom)
+                    && entry.getValue().getDateSubmitted().before(dateTo)) {
+                jobsList.add(entry.getValue());
+            }
+        }
+        int to = offset + size;
+        return jobsList.subList(offset, to > jobsList.size() ? jobsList.size() : to);
+    }
+
+    @Override
     public List<Job> getAll() {
         return new LinkedList<>(jobs.values());
     }
