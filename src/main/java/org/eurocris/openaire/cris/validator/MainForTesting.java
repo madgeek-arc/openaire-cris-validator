@@ -20,7 +20,7 @@ public class MainForTesting {
 
     public static final Logger logger = LogManager.getLogger(MainForTesting.class);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         JobDao dao = new MapJobDao();
@@ -41,9 +41,10 @@ public class MainForTesting {
 
         try {
             executor.awaitTermination(5, TimeUnit.MINUTES);
-            dao.getAll().forEach(job -> System.out.println(job.getStatus()));
+            dao.getAll().forEach(job -> logger.info(job.getStatus()));
         } catch (InterruptedException e) {
             logger.error("ERROR", e);
+            throw e;
         }
 
         // shut down the executor manually
