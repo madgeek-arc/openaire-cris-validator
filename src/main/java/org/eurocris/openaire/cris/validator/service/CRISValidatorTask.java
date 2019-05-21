@@ -16,11 +16,13 @@ public class CRISValidatorTask implements Runnable {
 
     private static final Logger logger = LogManager.getLogger(CRISValidatorTask.class);
     private Job job;
+    private JobDao jobDao;
     private TaskListener[] listeners;
 
 
-    public CRISValidatorTask(Job newJob, TaskListener... listeners) {
-        this.job = newJob;
+    public CRISValidatorTask(Job job, JobDao jobDao, TaskListener... listeners) {
+        this.job = job;
+        this.jobDao = jobDao;
         this.listeners = listeners;
     }
 
@@ -31,6 +33,8 @@ public class CRISValidatorTask implements Runnable {
         try {
             CRISValidator object = new CRISValidator(job.getUrl(), job.getId());
             results = object.executeTests();
+            job.setRuleErrors(results);
+            jobDao.save(job);
         } catch (MalformedURLException | SAXException e) {
             logger.error("ERROR", e);
             // TODO: get the errors of the validation

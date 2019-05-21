@@ -49,7 +49,7 @@ public class CRISValidatorExecutor implements JobExecutor {
     @Override
     public Job submit(Job job) {
         TaskListener listener = new StatusListener(job, dao);
-        executor.submit(() -> new CRISValidatorTask(job, listener).run());
+        executor.submit(() -> new CRISValidatorTask(job, dao, listener).run());
         return job;
     }
 

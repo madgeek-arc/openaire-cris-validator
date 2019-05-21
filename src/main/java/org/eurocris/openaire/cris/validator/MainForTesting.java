@@ -36,7 +36,7 @@ public class MainForTesting {
         for (String url : urls) {
             Job job = new Job(url, "me");
             TaskListener listener = new StatusListener(job, dao);
-            executor.submit(() -> new CRISValidatorTask(job, listener).run());
+            executor.submit(() -> new CRISValidatorTask(job, dao, listener).run());
         }
 
         try {
@@ -51,8 +51,8 @@ public class MainForTesting {
         executor.shutdown();
         StringBuilder report = new StringBuilder();
         for (Job job : dao.getAll()) {
-            report.append(String.format("%nJob [%s]%nurl:\t\t\t%s%nuser:\t\t\t%s%nstatus:\t\t\t%s%ndate submitted:\t%s%ndate started:\t%s%ndate finished:\t%s%n%n%n",
-                    job.getId(), job.getUrl(), job.getUser(), job.getStatus(), job.getDateSubmitted(), job.getDateStarted(), job.getDateFinished()));
+            report.append(String.format("%nJob [%s]%nurl:\t\t\t%s%nuser:\t\t\t%s%nstatus:\t\t\t%s%nscore:\t\t\t%s%ndate submitted:\t%s%ndate started:\t%s%ndate finished:\t%s%n%n%n",
+                    job.getId(), job.getUrl(), job.getUser(), job.getStatus(), job.getScore(), job.getDateSubmitted(), job.getDateStarted(), job.getDateFinished()));
         }
         logger.info(report);
     }

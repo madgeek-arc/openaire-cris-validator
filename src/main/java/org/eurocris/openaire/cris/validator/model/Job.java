@@ -1,9 +1,7 @@
 package org.eurocris.openaire.cris.validator.model;
 
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Job {
 
@@ -16,8 +14,38 @@ public class Job {
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, String> rules = new LinkedHashMap<>();
+    private Map<String, String> ruleErrors = new LinkedHashMap<>();
 
+    public enum Status {
+        PENDING("pending"),
+        ONGOING("ongoing"),
+        SUCCESSFUL("successful"),
+        FAILED("failed");
+
+        private final String status;
+
+        Status(final String status) {
+            this.status = status;
+        }
+
+        public String getKey() {
+            return status;
+        }
+
+        /**
+         * @return the Enum representation for the given string.
+         * @throws IllegalArgumentException if unknown string.
+         */
+        public static Status fromString(String s) throws IllegalArgumentException {
+            return Arrays.stream(Status.values())
+                    .filter(v -> v.status.equals(s))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown value: " + s + " ; Valid options: "
+                            + Arrays.stream(values())
+                            .map(Status::getKey)
+                            .collect(Collectors.joining(", "))));
+        }
+    }
 
     public Job() {
         this.id = UUID.randomUUID().toString();
@@ -34,6 +62,17 @@ public class Job {
         this.dateSubmitted = new Date();
     }
 
+    public int getScore() {
+        float score = 0;
+        if (ruleErrors != null && !ruleErrors.isEmpty()) {
+            for (Map.Entry<String, String> rule : ruleErrors.entrySet()) {
+                if (rule.getValue() != null && rule.getValue().equals("")) {
+                    score += (float) 1 / ruleErrors.size() * 100;
+                }
+            }
+        }
+        return Math.round(score);
+    }
 
     public String getId() {
         return id;
@@ -91,11 +130,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public Map<String, String> getRules() {
-        return rules;
+    public Map<String, String> getRuleErrors() {
+        return ruleErrors;
     }
 
-    public void setRules(Map<String, String> rules) {
-        this.rules = rules;
+    public void setRuleErrors(Map<String, String> ruleErrors) {
+        this.ruleErrors = ruleErrors;
     }
 }

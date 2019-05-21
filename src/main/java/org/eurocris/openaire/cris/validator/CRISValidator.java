@@ -156,7 +156,7 @@ public class CRISValidator {
      */
     public String invokeMethod(String methodName) throws NoSuchMethodException {
         Method method = CRISValidator.class.getMethod(methodName);
-        String ret = "ok";
+        String ret = "";
         try {
             method.invoke(this);
         } catch (Throwable e) {
