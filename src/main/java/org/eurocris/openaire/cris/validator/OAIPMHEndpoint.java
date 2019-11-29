@@ -345,7 +345,7 @@ public class OAIPMHEndpoint {
 		final StringBuilder b = new StringBuilder( baseUrl );
 		final boolean local = baseUrl.startsWith( "file:" );
 		b.append( ( local ) ? '_' : '?' );
-		b.append( "verb=" + verb );
+		b.append( "verb=" + verb ); // TODO: change how filenames for tests are created
 		final char mainSep = ( local ) ? '+' : '&';
 		char sep = mainSep;
 		for ( final String param : params ) {
