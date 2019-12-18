@@ -1,5 +1,7 @@
 package org.eurocris.openaire.cris.validator.model;
 
+import org.eurocris.openaire.cris.validator.util.ValidationResults;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,7 +16,7 @@ public class Job {
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, String> ruleErrors = new LinkedHashMap<>();
+    private Map<String, ValidationResults> ruleResults = new LinkedHashMap<>();
 
     public enum Status {
         PENDING("pending"),
@@ -64,10 +66,16 @@ public class Job {
 
     public int getScore() {
         float score = 0;
-        if (ruleErrors != null && !ruleErrors.isEmpty()) {
-            for (Map.Entry<String, String> rule : ruleErrors.entrySet()) {
-                if (rule.getValue() != null && rule.getValue().equals("")) {
-                    score += (float) 1 / ruleErrors.size() * 100;
+        if (ruleResults != null && !ruleResults.isEmpty()) {
+            for (Map.Entry<String, ValidationResults> rule : ruleResults.entrySet()) {
+                if (rule.getValue() != null && rule.getValue().getErrors().isEmpty()) {
+                    // FIXME: change score creation method (use only rules having at least 1 record ??)
+                    // rule score: (total - failed) / total
+                    float ruleScore = 0;
+                    if (rule.getValue().getCount() != 0) {
+                        ruleScore = (float) (rule.getValue().getCount() - rule.getValue().getFailed()) / rule.getValue().getCount();
+                        score += ruleScore / ruleResults.size() * 100;
+                    }
                 }
             }
         }
@@ -130,11 +138,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public Map<String, String> getRuleErrors() {
-        return ruleErrors;
+    public Map<String, ValidationResults> getRuleResults() {
+        return ruleResults;
     }
 
-    public void setRuleErrors(Map<String, String> ruleErrors) {
-        this.ruleErrors = ruleErrors;
+    public void setRuleResults(Map<String, ValidationResults> ruleResults) {
+        this.ruleResults = ruleResults;
     }
 }

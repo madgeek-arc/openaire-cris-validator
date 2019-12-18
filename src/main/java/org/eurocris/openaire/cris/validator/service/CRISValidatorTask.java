@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.util.ValidationResults;
 import org.xml.sax.SAXException;
 
 import java.net.MalformedURLException;
@@ -28,20 +29,25 @@ public class CRISValidatorTask implements Runnable {
 
     @Override
     public void run() {
-        Map<String, String> results = new HashMap<>();
+        Map<String, ValidationResults> results = new HashMap<>();
         Arrays.stream(listeners).forEach(TaskListener::started);
         try {
             CRISValidator object = new CRISValidator(job.getUrl(), job.getId());
             results = object.executeTests();
-            job.setRuleErrors(results);
+            job.setRuleResults(results);
             jobDao.save(job);
         } catch (MalformedURLException | SAXException e) {
             logger.error("ERROR", e);
             // TODO: get the errors of the validation
             Arrays.stream(listeners).forEach(l -> l.failed(null));
         }
-        for (Map.Entry<String, String> result : results.entrySet())
-            logger.info(String.format("Method: %s  -> %s", result.getKey(), result.getValue()));
+        for (Map.Entry<String, ValidationResults> result : results.entrySet()) {
+            StringBuilder errors = new StringBuilder();
+            result.getValue().getErrors().forEach(e -> errors.append(e).append('\n'));
+            logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getKey(),
+                    result.getValue().getCount(), result.getValue().getFailed(), errors);
+        }
+        logger.info("Job[{}] - Score: {}", job.getId(), job.getScore());
 
         for (TaskListener listener : listeners) {
             listener.finished(results);
