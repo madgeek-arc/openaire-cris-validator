@@ -160,12 +160,14 @@ public class CheckingIterableTest {
 	/**
 	 * Test that three entries, two of which are a duplicate, are recognized as a non-unique list.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test
 	public void testThreeEntriesUniqueFind() {
 		final List<String> list = Arrays.asList( "hello", "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
+		assert c0.getResults().getErrors().isEmpty();
+		assert !c1.getResults().getErrors().isEmpty();
 	}
 	
 	/**
@@ -182,12 +184,14 @@ public class CheckingIterableTest {
 	/**
 	 * Test that the uniqueness check disregards nulls, non-unique values listed.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test
 	public void testThreeEntriesUniqueFindDisregardsNulls() {
 		final List<String> list = Arrays.asList( "hello", null, null, "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
+		assert c0.getResults().getErrors().isEmpty();
+		assert !c1.getResults().getErrors().isEmpty();
 	}
 	
 	/**
@@ -204,12 +208,14 @@ public class CheckingIterableTest {
 	/**
 	 * Test that {@link CheckingIterable#checkForAllEquals(Function, Function, String)} works: the case of non-equality.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test
 	public void testForAllEqualsFail() {
 		final List<String> list = Collections.singletonList( "BeautiFul" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, "Entries should be lowercased" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
+		assert c0.getResults().getErrors().isEmpty();
+		assert !c1.getResults().getErrors().isEmpty();
 	}
 	
 	/**

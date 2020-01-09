@@ -1,6 +1,6 @@
 package org.eurocris.openaire.cris.validator.model;
 
-import org.eurocris.openaire.cris.validator.util.ValidationResults;
+import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -11,12 +11,13 @@ public class Job {
     private String url;
     private String user;
     private String status;
+    private int score = 0;
 
     private Date dateSubmitted;
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, ValidationResults> ruleResults = new LinkedHashMap<>();
+    private Map<String, ValidatorRuleResults> ruleResults = new LinkedHashMap<>();
 
     public enum Status {
         PENDING("pending"),
@@ -65,21 +66,11 @@ public class Job {
     }
 
     public int getScore() {
-        float score = 0;
-        if (ruleResults != null && !ruleResults.isEmpty()) {
-            for (Map.Entry<String, ValidationResults> rule : ruleResults.entrySet()) {
-                if (rule.getValue() != null && rule.getValue().getErrors().isEmpty()) {
-                    // FIXME: change score creation method (use only rules having at least 1 record ??)
-                    // rule score: (total - failed) / total
-                    float ruleScore = 0;
-                    if (rule.getValue().getCount() != 0) {
-                        ruleScore = (float) (rule.getValue().getCount() - rule.getValue().getFailed()) / rule.getValue().getCount();
-                        score += ruleScore / ruleResults.size() * 100;
-                    }
-                }
-            }
-        }
-        return Math.round(score);
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 
     public String getId() {
@@ -138,11 +129,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public Map<String, ValidationResults> getRuleResults() {
+    public Map<String, ValidatorRuleResults> getRuleResults() {
         return ruleResults;
     }
 
-    public void setRuleResults(Map<String, ValidationResults> ruleResults) {
+    public void setRuleResults(Map<String, ValidatorRuleResults> ruleResults) {
         this.ruleResults = ruleResults;
     }
 }

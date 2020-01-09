@@ -4,12 +4,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.model.Job;
 import org.eurocris.openaire.cris.validator.service.JobDao;
-import org.eurocris.openaire.cris.validator.util.ValidationResults;
+import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
 
 import java.util.Date;
 import java.util.Map;
 
-public class StatusListener implements TaskListener<Map<String, ValidationResults>> {
+public class StatusListener implements TaskListener<Map<String, ValidatorRuleResults>> {
 
     private static final Logger logger = LogManager.getLogger(StatusListener.class);
     private Job job;
@@ -30,7 +30,7 @@ public class StatusListener implements TaskListener<Map<String, ValidationResult
     }
 
     @Override
-    public void finished(Map<String, ValidationResults> results) {
+    public void finished(Map<String, ValidatorRuleResults> results) {
         job.setStatus(Job.Status.SUCCESSFUL.getKey());
         job.setDateFinished(new Date());
         job.setRuleResults(results);
@@ -39,7 +39,7 @@ public class StatusListener implements TaskListener<Map<String, ValidationResult
     }
 
     @Override
-    public void failed(Map<String, ValidationResults> errors) {
+    public void failed(Map<String, ValidatorRuleResults> errors) {
         job.setStatus(Job.Status.FAILED.getKey());
         job.setRuleResults(errors);
         dao.save(job);

@@ -3,16 +3,16 @@ package org.eurocris.openaire.cris.validator.util;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ValidationResults {
+public class ValidatorRuleResults {
 
     private long count = 0;
     private long failed = 0;
     private List<String> errors = new ArrayList<>();
 
-    public ValidationResults() {
+    public ValidatorRuleResults() {
     }
 
-    public ValidationResults(long count, long failed, List<String> errors) {
+    public ValidatorRuleResults(long count, long failed, List<String> errors) {
         this.count = count;
         this.failed = failed;
         this.errors = errors;
@@ -27,7 +27,9 @@ public class ValidationResults {
     }
 
     public void addError(String error) {
-        this.errors.add(error);
+        if (this.errors.size() < 10) { // save only the first 10 errors
+            this.errors.add(error);
+        }
     }
 
     public long getCount() {

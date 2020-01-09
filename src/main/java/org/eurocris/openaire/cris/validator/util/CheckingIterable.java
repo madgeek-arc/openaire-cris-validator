@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
  */
 public abstract class CheckingIterable<T> implements Iterable<T> {
 
-	protected ValidationResults results = new ValidationResults();
+	protected ValidatorRuleResults results = new ValidatorRuleResults();
 
 	/**
 	 * Iterate through the elements and call {@link #close()} at the end.
@@ -51,7 +51,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * Retrieve validation results.
 	 * @return
 	 */
-	public ValidationResults getResults() {
+	public ValidatorRuleResults getResults() {
 		return results;
 	}
 

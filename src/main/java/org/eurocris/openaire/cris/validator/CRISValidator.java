@@ -7,7 +7,7 @@ import org.eurocris.openaire.cris.validator.exception.ValidationMethodException;
 import org.eurocris.openaire.cris.validator.tree.CERIFNode;
 import org.eurocris.openaire.cris.validator.util.CheckingIterable;
 import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
-import org.eurocris.openaire.cris.validator.util.ValidationResults;
+import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
 import org.eurocris.openaire.cris.validator.util.XmlUtils;
 import org.openarchives.oai._2.*;
 import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
@@ -155,18 +155,18 @@ public class CRISValidator {
      * @return
      * @throws NoSuchMethodException when the given method name is wrong.
      */
-    public ValidationResults invokeMethod(String methodName) throws NoSuchMethodException {
+    public ValidatorRuleResults invokeMethod(String methodName) throws NoSuchMethodException {
         Method method = CRISValidator.class.getMethod(methodName);
         String ret = "";
         try {
             Object results = method.invoke(this);
             if (results != null) {
-                return (ValidationResults) results;
+                return (ValidatorRuleResults) results;
             }
         } catch (Throwable e) {
             ret = e.getCause().getMessage();
         }
-        return new ValidationResults(0, 0, Collections.singletonList(ret));
+        return new ValidatorRuleResults(0, 0, Collections.singletonList(ret));
     }
 
     /**
@@ -174,8 +174,8 @@ public class CRISValidator {
      *
      * @return {@link Map}
      */
-    public Map<String, ValidationResults> executeTests() {
-        Map<String, ValidationResults> methodResults = new TreeMap<>();
+    public Map<String, ValidatorRuleResults> executeTests() {
+        Map<String, ValidatorRuleResults> methodResults = new TreeMap<>();
         try {
             for (int i = 0; i < methods.length; i++) {
                 methodResults.put(methods[i], invokeMethod(methods[i]));
@@ -290,7 +290,7 @@ public class CRISValidator {
      * @throws SAXException
      * @throws IOException
      */
-    public ValidationResults check000_Identify() throws JAXBException, SAXException, IOException {
+    public ValidatorRuleResults check000_Identify() throws JAXBException, SAXException, IOException {
         final IdentifyType identify = endpoint.get().callIdentify();
         CheckingIterable<DescriptionType> checker = CheckingIterable.over(identify.getDescription());
         checker = checker.checkContainsOne(new Predicate<DescriptionType>() {
@@ -350,7 +350,7 @@ public class CRISValidator {
      * @throws SAXException
      * @throws IOException
      */
-    public ValidationResults check010_MetadataFormats() throws JAXBException, SAXException, IOException {
+    public ValidatorRuleResults check010_MetadataFormats() throws JAXBException, SAXException, IOException {
         CheckingIterable<MetadataFormatType> checker = CheckingIterable.over(endpoint.get().callListMetadataFormats().getMetadataFormat());
         checker = checker.checkUnique(MetadataFormatType::getMetadataPrefix, "Metadata prefix not unique");
         checker = checker.checkUnique(MetadataFormatType::getMetadataNamespace, "Metadata namespace not unique");
@@ -412,7 +412,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check020_Sets() throws ValidationMethodException {
+    public ValidatorRuleResults check020_Sets() throws ValidationMethodException {
         CheckingIterable<SetType> checker = CheckingIterable.over(endpoint.get().callListSets());
         checker = checker.checkUnique(SetType::getSetSpec, "setSpec not unique");
         checker = wrapCheckSetPresent(checker, OPENAIRE_CRIS_PUBLICATIONS__SET_SPEC, "OpenAIRE_CRIS_publications");
@@ -452,7 +452,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check100_CheckPublications() throws ValidationMethodException {
+    public ValidatorRuleResults check100_CheckPublications() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PUBLICATIONS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Publication");
         checker.run();
@@ -464,7 +464,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check200_CheckProducts() throws ValidationMethodException {
+    public ValidatorRuleResults check200_CheckProducts() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PRODUCTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Product");
         checker.run();
@@ -476,7 +476,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check300_CheckPatents() throws ValidationMethodException {
+    public ValidatorRuleResults check300_CheckPatents() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PATENTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Patent");
         checker.run();
@@ -488,7 +488,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check400_CheckPersons() throws ValidationMethodException {
+    public ValidatorRuleResults check400_CheckPersons() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PERSONS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Person");
         checker.run();
@@ -500,7 +500,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check500_CheckOrgUnits() throws ValidationMethodException {
+    public ValidatorRuleResults check500_CheckOrgUnits() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_ORGUNITS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "OrgUnit");
         checker.run();
@@ -512,7 +512,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check600_CheckProjects() throws ValidationMethodException {
+    public ValidatorRuleResults check600_CheckProjects() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_PROJECTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Project");
         checker.run();
@@ -524,7 +524,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check700_CheckFundings() throws ValidationMethodException {
+    public ValidatorRuleResults check700_CheckFundings() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_FUNDING__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Funding");
         checker.run();
@@ -536,7 +536,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check800_CheckEquipment() throws ValidationMethodException {
+    public ValidatorRuleResults check800_CheckEquipment() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Equipment");
         checker.run();
@@ -548,7 +548,7 @@ public class CRISValidator {
      *
      * @throws ValidationMethodException on any unexpected circumstance
      */
-    public ValidationResults check900_CheckEvents() throws ValidationMethodException {
+    public ValidatorRuleResults check900_CheckEvents() throws ValidationMethodException {
         final Iterable<RecordType> records = endpoint.get().callListRecords(OAI_CERIF_OPENAIRE__METADATA_PREFIX, OPENAIRE_CRIS_EVENTS__SET_SPEC, null, null);
         final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, "Event");
         checker.run();
