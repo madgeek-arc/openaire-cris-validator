@@ -1,5 +1,7 @@
 package org.eurocris.openaire.cris.validator.model;
 
+import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -9,12 +11,13 @@ public class Job {
     private String url;
     private String user;
     private String status;
+    private int score = 0;
 
     private Date dateSubmitted;
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, String> ruleErrors = new LinkedHashMap<>();
+    private Map<String, ValidatorRuleResults> ruleResults = new LinkedHashMap<>();
 
     public enum Status {
         PENDING("pending"),
@@ -63,15 +66,11 @@ public class Job {
     }
 
     public int getScore() {
-        float score = 0;
-        if (ruleErrors != null && !ruleErrors.isEmpty()) {
-            for (Map.Entry<String, String> rule : ruleErrors.entrySet()) {
-                if (rule.getValue() != null && rule.getValue().equals("")) {
-                    score += (float) 1 / ruleErrors.size() * 100;
-                }
-            }
-        }
-        return Math.round(score);
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 
     public String getId() {
@@ -130,11 +129,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public Map<String, String> getRuleErrors() {
-        return ruleErrors;
+    public Map<String, ValidatorRuleResults> getRuleResults() {
+        return ruleResults;
     }
 
-    public void setRuleErrors(Map<String, String> ruleErrors) {
-        this.ruleErrors = ruleErrors;
+    public void setRuleResults(Map<String, ValidatorRuleResults> ruleResults) {
+        this.ruleResults = ruleResults;
     }
 }
