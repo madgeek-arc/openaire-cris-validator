@@ -713,6 +713,7 @@ public class CRISValidator {
                     if (msg.startsWith("cvc-pattern-valid: ")) {
                         patternValidErrorSignalled = true;
                         logger.error("In " + elString + ": " + msg);
+                        throw exception; // TODO: is this needed here?
                     } else {
                         if (!(patternValidErrorSignalled && msg.startsWith("cvc-complex-type.2.2: "))) {
                             throw exception;
