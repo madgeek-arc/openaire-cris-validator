@@ -61,7 +61,7 @@ public class CRISValidatorTask implements Runnable {
         float score = 0;
         if (resultsMap != null && !resultsMap.isEmpty()) {
             for (Map.Entry<String, ValidatorRuleResults> rule : resultsMap.entrySet()) {
-                if (rule.getValue() != null && rule.getValue().getErrors().isEmpty()) {
+                if (rule.getValue() != null) {
                     // rule score: (total - failed) / total
                     float ruleScore = 0;
                     if (rule.getValue().getCount() != 0) {
