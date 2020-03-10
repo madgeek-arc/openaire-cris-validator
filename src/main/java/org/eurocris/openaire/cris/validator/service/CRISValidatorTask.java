@@ -7,10 +7,10 @@ import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
 import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
 import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
-import org.xml.sax.SAXException;
 
-import java.net.MalformedURLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CRISValidatorTask implements Runnable {
 
@@ -36,45 +36,21 @@ public class CRISValidatorTask implements Runnable {
         try {
             CRISValidator object = new CRISValidator(job.getUrl(), job.getId());
             results = object.executeTests();
-            job.setRuleResults(results);
-            job.setScore(createJobScore(results, ruleWeights));
-            jobDao.save(job);
-        } catch (MalformedURLException | SAXException e) {
+            for (TaskListener listener : listeners) {
+                listener.finished(results);
+            }
+        } catch (Exception e) {
             logger.error("ERROR", e);
-            // TODO: get the errors of the validation
             Arrays.stream(listeners).forEach(l -> l.failed(null));
         }
-        for (Map.Entry<String, ValidatorRuleResults> result : results.entrySet()) {
-            StringBuilder errors = new StringBuilder();
-            result.getValue().getErrors().forEach(e -> errors.append(e).append('\n'));
-            logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getKey(),
-                    result.getValue().getCount(), result.getValue().getFailed(), errors);
-        }
-        logger.info("Job[{}] - Score: {}", job.getId(), job.getScore());
-
-        for (TaskListener listener : listeners) {
-            listener.finished(results);
-        }
-    }
-
-    private int createJobScore(Map<String, ValidatorRuleResults> resultsMap, Map<String, Float> ruleWeights) {
-        float score = 0;
-        if (resultsMap != null && !resultsMap.isEmpty()) {
-            for (Map.Entry<String, ValidatorRuleResults> rule : resultsMap.entrySet()) {
-                if (rule.getValue() != null) {
-                    // rule score: (total - failed) / total
-                    float ruleScore = 0;
-                    if (rule.getValue().getCount() != 0) {
-                        ruleScore = (float) (rule.getValue().getCount() - rule.getValue().getFailed()) / rule.getValue().getCount();
-                        if (ruleWeights.get(rule.getKey()) != null) {
-                            score += ruleScore * ruleWeights.get(rule.getKey());
-                        } else {
-                            score += ruleScore / resultsMap.size() * 100;
-                        }
-                    }
-                }
+        if (results != null && !results.entrySet().isEmpty()) {
+            for (Map.Entry<String, ValidatorRuleResults> result : results.entrySet()) {
+                StringBuilder errors = new StringBuilder();
+                result.getValue().getErrors().forEach(e -> errors.append(e.getMessage()).append('\n'));
+                logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getKey(),
+                        result.getValue().getCount(), result.getValue().getFailed(), errors);
             }
+            logger.info("Job[{}]\n\tUsage Score: {}\n\tContent Score: {}", job.getId(), job.getUsageScore(), job.getContentScore());
         }
-        return Math.round(score);
     }
 }

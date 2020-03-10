@@ -11,7 +11,8 @@ public class Job {
     private String url;
     private String user;
     private String status;
-    private int score = 0;
+    private int usageScore = 0;
+    private int contentScore = 0;
 
     private Date dateSubmitted;
     private Date dateStarted = null;
@@ -65,14 +66,6 @@ public class Job {
         this.dateSubmitted = new Date();
     }
 
-    public int getScore() {
-        return score;
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
     public String getId() {
         return id;
     }
@@ -103,6 +96,22 @@ public class Job {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public int getUsageScore() {
+        return usageScore;
+    }
+
+    public void setUsageScore(int usageScore) {
+        this.usageScore = usageScore;
+    }
+
+    public int getContentScore() {
+        return contentScore;
+    }
+
+    public void setContentScore(int contentScore) {
+        this.contentScore = contentScore;
     }
 
     public Date getDateSubmitted() {

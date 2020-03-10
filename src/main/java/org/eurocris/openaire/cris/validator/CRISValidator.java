@@ -4,6 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
 import org.eurocris.openaire.cris.validator.exception.ValidationMethodException;
+import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
+import org.eurocris.openaire.cris.validator.model.ValidationError;
 import org.eurocris.openaire.cris.validator.tree.CERIFNode;
 import org.eurocris.openaire.cris.validator.util.CheckingIterable;
 import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
@@ -31,6 +33,7 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -122,25 +125,32 @@ public class CRISValidator {
      */
     public static final String OPENAIRE_CERIF_SCHEMA_FILENAME = "openaire-cerif-profile.xsd";
 
+    public static final String USAGE = "usage";
+
+    public static final String CONTENT = "content";
+
     /**
-     * Method names used for the validation. (The methods are executed using reflection)
+     * Method ids and names used for the validation. (The methods are executed using reflection)
      * (*Can potentially become a user defined list of validation methods)
      */
-    protected static final String[] methods = new String[]{
-            "check000_Identify",
-            "check010_MetadataFormats",
-            "check020_Sets",
-            "check100_CheckPublications",
-            "check200_CheckProducts",
-            "check300_CheckPatents",
-            "check400_CheckPersons",
-            "check500_CheckOrgUnits",
-            "check600_CheckProjects",
-            "check700_CheckFundings",
-            "check800_CheckEquipment",
-            "check900_CheckEvents",
-            "check990_CheckReferentialIntegrityAndFunctionalDependency"
-    };
+    public static final Map<String, String> methodsMap;
+    static {
+        Map<String, String> methods = new TreeMap<>();
+        methods.put("check000_Identify", USAGE);
+        methods.put("check010_MetadataFormats", USAGE);
+        methods.put("check020_Sets", CONTENT);
+        methods.put("check100_CheckPublications", CONTENT);
+        methods.put("check200_CheckProducts", CONTENT);
+        methods.put("check300_CheckPatents", CONTENT);
+        methods.put("check400_CheckPersons", CONTENT);
+        methods.put("check500_CheckOrgUnits", CONTENT);
+        methods.put("check600_CheckProjects", CONTENT);
+        methods.put("check700_CheckFundings", CONTENT);
+        methods.put("check800_CheckEquipment", CONTENT);
+        methods.put("check900_CheckEvents", CONTENT);
+        methods.put("check990_CheckReferentialIntegrityAndFunctionalDependency", CONTENT);
+        methodsMap = Collections.unmodifiableMap(methods);
+    }
 
     private static ThreadLocal<OAIPMHEndpoint> endpoint = new ThreadLocal<>();
 
@@ -157,16 +167,21 @@ public class CRISValidator {
      */
     public ValidatorRuleResults invokeMethod(String methodName) throws NoSuchMethodException {
         Method method = CRISValidator.class.getMethod(methodName);
-        String ret = "";
+        ValidationError error = null;
         try {
             Object results = method.invoke(this);
             if (results != null) {
                 return (ValidatorRuleResults) results;
             }
-        } catch (Throwable e) {
-            ret = e.getCause().getMessage();
+        } catch (ValidationRuleException e) {
+            error = ValidationError.of(e);
+        } catch (ValidationMethodException e) {
+            error = new ValidationError(e.getCause().getMessage());
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            logger.error("ERROR", e);
+            error = new ValidationError(e.getCause().getMessage());
         }
-        return new ValidatorRuleResults(0, 0, Collections.singletonList(ret));
+        return new ValidatorRuleResults(0, 0, Collections.singletonList(error));
     }
 
     /**
@@ -177,8 +192,8 @@ public class CRISValidator {
     public Map<String, ValidatorRuleResults> executeTests() {
         Map<String, ValidatorRuleResults> methodResults = new TreeMap<>();
         try {
-            for (int i = 0; i < methods.length; i++) {
-                methodResults.put(methods[i], invokeMethod(methods[i]));
+            for (Map.Entry<String, String> method : methodsMap.entrySet()) {
+                methodResults.put(method.getKey(), invokeMethod(method.getKey()));
             }
         } catch (NoSuchMethodException e) {
             logger.error("ERROR", e);
@@ -650,7 +665,7 @@ public class CRISValidator {
         for (final Map.Entry<String, CERIFNode> entry : recordsByOaiIdentifier.entrySet()) {
             final String oaiIdentifier = entry.getKey();
             final CERIFNode node = entry.getValue();
-            // for all harvested CERIF data, check the children of the MainForTesting objects (no need to check the objects themselves, they satisfy all checks trivially)
+            // for all harvested CERIF data, check the children of the main objects (no need to check the objects themselves, they satisfy all checks trivially)
             for (final CERIFNode node3 : node.getChildren(null)) {
                 lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(node3, oaiIdentifier);
             }
@@ -674,12 +689,15 @@ public class CRISValidator {
         if (name.contains("[@id=\"")) {
             final CERIFNode baseNode = recordsByName.get(name);
             if (baseNode == null) {
-                logger.error(String.format("Record for %s not found, referential integrity violated in %s (5a)", name, oaiIdentifier));
-                throw new ValidationMethodException(String.format("Record for %s not found, referential integrity violated in %s (5a)", name, oaiIdentifier));
+                String error = String.format("Record for %s not found, referential integrity violated in %s (5a)", name, oaiIdentifier);
+                logger.error(error);
+                throw new ValidationMethodException(error);
             }
             if (!node.isSubsetOf(baseNode)) {
                 final CERIFNode missingNode = node.reportWhatIMiss(baseNode).get();
-                throw new ValidationMethodException("Violation of (5b) in " + oaiIdentifier + ":\n" + node + "is not subset of\n" + baseNode + "missing is\n" + missingNode);
+                String error = "Violation of (5b) in " + oaiIdentifier + ":\n" + node + "is not subset of\n" + baseNode + "missing is\n" + missingNode;
+                logger.error(error);
+                throw new ValidationMethodException(error);
             }
         }
     }

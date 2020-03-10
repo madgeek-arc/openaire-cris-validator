@@ -25,6 +25,8 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.validation.Schema;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.http.CompressionHandlingHttpURLConnectionAdapter;
 import org.openarchives.oai._2.DescriptionType;
 import org.openarchives.oai._2.HeaderType;
@@ -48,6 +50,8 @@ import org.xml.sax.SAXException;
  * @author jdvorak
  */
 public class OAIPMHEndpoint {
+
+	private static final Logger logger = LogManager.getLogger(OAIPMHEndpoint.class);
 	
 	private final String baseUrl;
 
@@ -200,7 +204,7 @@ public class OAIPMHEndpoint {
 	@SuppressWarnings( "unchecked")
 	private OAIPMHtype makeConnection( final boolean repoWideRequest, final String verb, final String... params ) throws IOException, SAXException, JAXBException {
 		final URL url = makeUrl( verb, params );
-		System.out.println( "Fetching and validating " + url.toExternalForm() );
+		logger.info( "Fetching and validating {}", url.toExternalForm() );
 		final URLConnection conn = handleCompression( url.openConnection() );
 		conn.setRequestProperty( "User-Agent", userAgent );
 		conn.setRequestProperty( "Accept", "text/xml, application/xml" );
@@ -291,7 +295,7 @@ public class OAIPMHEndpoint {
 	/**
 	 * Extracts the OAI identifier's repository identifier value. 
 	 * @param identifyResponse the response to an Identify request
-	 * @param the repository identifier if one is provided, an empty {@link Optional} otherwise. 
+	 * @return the repository identifier if one is provided, an empty {@link Optional} otherwise.
 	 */
 	private Optional<String> extractRepoIdentifier( final IdentifyType identifyResponse ) {
 		for ( final DescriptionType description : identifyResponse.getDescription() ) {
