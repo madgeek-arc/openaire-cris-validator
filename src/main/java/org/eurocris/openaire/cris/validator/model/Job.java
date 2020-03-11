@@ -1,7 +1,5 @@
 package org.eurocris.openaire.cris.validator.model;
 
-import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,7 +16,7 @@ public class Job {
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, ValidatorRuleResults> ruleResults = new LinkedHashMap<>();
+    private ValidationResults ruleResults = new ValidationResults();
 
     public enum Status {
         PENDING("pending"),
@@ -138,11 +136,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public Map<String, ValidatorRuleResults> getRuleResults() {
+    public ValidationResults getRuleResults() {
         return ruleResults;
     }
 
-    public void setRuleResults(Map<String, ValidatorRuleResults> ruleResults) {
+    public void setRuleResults(ValidationResults ruleResults) {
         this.ruleResults = ruleResults;
     }
 }

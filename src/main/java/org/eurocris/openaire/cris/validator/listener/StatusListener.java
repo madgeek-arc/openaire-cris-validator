@@ -4,9 +4,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.model.ValidationResults;
 import org.eurocris.openaire.cris.validator.service.JobDao;
 import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
-import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
 
 import java.util.Date;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class StatusListener implements TaskListener {
     }
 
     @Override
-    public void finished(Map<String, ValidatorRuleResults> results) {
+    public void finished(ValidationResults results) {
         job.setStatus(Job.Status.SUCCESSFUL.getKey());
         job.setDateFinished(new Date());
         job.setRuleResults(results);
@@ -49,7 +50,7 @@ public class StatusListener implements TaskListener {
     }
 
     @Override
-    public void failed(Map<String, ValidatorRuleResults> errors) {
+    public void failed(ValidationResults errors) {
         job.setStatus(Job.Status.FAILED.getKey());
         job.setRuleResults(errors);
         job.setUsageScore(0);
@@ -58,11 +59,11 @@ public class StatusListener implements TaskListener {
         logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
     }
 
-    private int createScore(Map<String, ValidatorRuleResults> resultsMap, Map<String, Float> ruleWeights, String type) {
+    private int createScore(ValidationResults resultsMap, Map<String, Float> ruleWeights, String type) {
         float score = 0;
         int rulesCount = 0;
         if (resultsMap != null && !resultsMap.isEmpty()) {
-            for (Map.Entry<String, ValidatorRuleResults> rule : resultsMap.entrySet()) {
+            for (Map.Entry<String, RuleResults> rule : resultsMap.entrySet()) {
                 if (CRISValidator.methodsMap.get(rule.getKey()).equals(type)) {
                     rulesCount++;
                     if (rule.getValue() != null) {

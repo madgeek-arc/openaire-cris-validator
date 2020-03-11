@@ -5,10 +5,10 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
-import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.model.ValidationResults;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 public class CRISValidatorTask implements Runnable {
@@ -26,7 +26,7 @@ public class CRISValidatorTask implements Runnable {
 
     @Override
     public void run() {
-        Map<String, ValidatorRuleResults> results = new HashMap<>();
+        ValidationResults results = new ValidationResults();
         Arrays.stream(listeners).forEach(TaskListener::started);
         try {
             CRISValidator object = new CRISValidator(job.getUrl(), job.getId());
@@ -39,7 +39,7 @@ public class CRISValidatorTask implements Runnable {
             Arrays.stream(listeners).forEach(l -> l.failed(null));
         }
         if (results != null && !results.entrySet().isEmpty()) {
-            for (Map.Entry<String, ValidatorRuleResults> result : results.entrySet()) {
+            for (Map.Entry<String, RuleResults> result : results.entrySet()) {
                 StringBuilder errors = new StringBuilder();
                 result.getValue().getErrors().forEach(e -> errors.append(e.getMessage()).append('\n'));
                 logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getKey(),

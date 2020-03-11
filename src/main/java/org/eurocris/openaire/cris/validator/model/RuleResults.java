@@ -1,20 +1,22 @@
-package org.eurocris.openaire.cris.validator.util;
+package org.eurocris.openaire.cris.validator.model;
 
 import org.eurocris.openaire.cris.validator.model.ValidationError;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ValidatorRuleResults {
+public class RuleResults {
 
+    private String ruleMethodName;
+    private int ruleId = -1;
     private long count = 0;
     private long failed = 0;
     private List<ValidationError> errors = new ArrayList<>();
 
-    public ValidatorRuleResults() {
+    public RuleResults() {
     }
 
-    public ValidatorRuleResults(long count, long failed, List<ValidationError> errors) {
+    public RuleResults(long count, long failed, List<ValidationError> errors) {
         this.count = count;
         this.failed = failed;
         this.errors = errors;

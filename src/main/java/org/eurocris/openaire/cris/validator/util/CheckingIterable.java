@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.exception.ValidationMethodException;
 import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
 import org.eurocris.openaire.cris.validator.model.ValidationError;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public abstract class CheckingIterable<T> implements Iterable<T> {
 
 	private static final Logger logger = LogManager.getLogger(CheckingIterable.class);
-	protected ValidatorRuleResults results = new ValidatorRuleResults();
+	protected RuleResults results = new RuleResults();
 
 	/**
 	 * Iterate through the elements and call {@link #close()} at the end.
@@ -64,7 +65,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * Retrieve validation results.
 	 * @return
 	 */
-	public ValidatorRuleResults getResults() {
+	public RuleResults getResults() {
 		return results;
 	}
 
