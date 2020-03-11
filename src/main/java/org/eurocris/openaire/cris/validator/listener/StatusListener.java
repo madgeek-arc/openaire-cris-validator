@@ -63,7 +63,7 @@ public class StatusListener implements TaskListener {
         int rulesCount = 0;
         if (resultsMap != null && !resultsMap.isEmpty()) {
             for (Map.Entry<String, ValidatorRuleResults> rule : resultsMap.entrySet()) {
-                if (rule.getKey().equals(type)) {
+                if (CRISValidator.methodsMap.get(rule.getKey()).equals(type)) {
                     rulesCount++;
                     if (rule.getValue() != null) {
                         // rule score: (total - failed) / total

@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
-import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
 import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
 
 import java.util.Arrays;
@@ -19,14 +18,10 @@ public class CRISValidatorTask implements Runnable {
     private JobDao jobDao;
     private TaskListener[] listeners;
 
-    private Map<String, Float> ruleWeights;
-
     public CRISValidatorTask(Job job, JobDao jobDao, TaskListener... listeners) {
         this.job = job;
         this.jobDao = jobDao;
         this.listeners = listeners;
-
-        this.ruleWeights = PropertiesUtils.getRuleWeights("/cris.properties");
     }
 
     @Override
