@@ -139,7 +139,7 @@ public class CRISValidator {
         Map<String, String> methods = new TreeMap<>();
         methods.put("check000_Identify", USAGE);
         methods.put("check010_MetadataFormats", USAGE);
-        methods.put("check020_Sets", CONTENT);
+        methods.put("check020_Sets", USAGE);
         methods.put("check100_CheckPublications", CONTENT);
         methods.put("check200_CheckProducts", CONTENT);
         methods.put("check300_CheckPatents", CONTENT);
@@ -172,6 +172,8 @@ public class CRISValidator {
         try {
             Object results = method.invoke(this);
             if (results != null) {
+                ((RuleResults) results).setRuleMethodName(methodName);
+                ((RuleResults) results).setType(methodsMap.get(methodName));
                 return (RuleResults) results;
             }
         } catch (ValidationRuleException e) {
@@ -182,7 +184,7 @@ public class CRISValidator {
             logger.error("ERROR", e);
             error = new ValidationError(e.getCause().getMessage());
         }
-        return new RuleResults(0, 0, Collections.singletonList(error));
+        return new RuleResults(methodName, methodsMap.get(methodName), -1, 0, 0, Collections.singletonList(error));
     }
 
     /**

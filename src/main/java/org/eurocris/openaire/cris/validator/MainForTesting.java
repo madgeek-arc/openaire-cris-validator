@@ -27,10 +27,11 @@ public class MainForTesting {
 
         String[] urls = new String[]{
                 "https://dwitjutife1.csc.fi/api/cerif",
-                "https://devel.atira.dk/eurocris/ws/oai",
+                "https://virta-jtp.csc.fi/api/cerif",
 //                "https://devel.atira.dk/eurocris/ws/oai",
-                "http://services.nod.dans.knaw.nl/oa-cerif",
-                "https://oamemtfa.uci.ru.nl/metis-oaipmh-endpoint/OAIHandler"
+//                "https://devel.atira.dk/eurocris/ws/oai",
+//                "http://services.nod.dans.knaw.nl/oa-cerif",
+//                "https://oamemtfa.uci.ru.nl/metis-oaipmh-endpoint/OAIHandler"
         };
 
         for (String url : urls) {

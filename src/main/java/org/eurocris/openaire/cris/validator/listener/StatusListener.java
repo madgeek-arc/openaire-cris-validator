@@ -29,6 +29,8 @@ public class StatusListener implements TaskListener {
 
     @Override
     public void started() {
+        job.setUsageJobStatus(Job.Status.ONGOING.getKey());
+        job.setContentJobStatus(Job.Status.ONGOING.getKey());
         job.setStatus(Job.Status.ONGOING.getKey());
         job.setDateStarted(new Date());
         dao.save(job);
@@ -37,12 +39,14 @@ public class StatusListener implements TaskListener {
 
     @Override
     public void finished(ValidationResults results) {
+        job.setUsageJobStatus(Job.Status.FINISHED.getKey());
+        job.setContentJobStatus(Job.Status.FINISHED.getKey());
         job.setStatus(Job.Status.SUCCESSFUL.getKey());
         job.setDateFinished(new Date());
         job.setRuleResults(results);
         job.setUsageScore(createScore(results, ruleWeights, CRISValidator.USAGE));
         job.setContentScore(createScore(results, ruleWeights, CRISValidator.CONTENT));
-        if (job.getUsageScore() <= 50 && job.getContentScore() <= 50) {
+        if (job.getUsageScore() <= 50 || job.getContentScore() <= 50) {
             job.setStatus(Job.Status.FAILED.getKey());
         }
         dao.save(job);
@@ -51,6 +55,8 @@ public class StatusListener implements TaskListener {
 
     @Override
     public void failed(ValidationResults errors) {
+        job.setUsageJobStatus(Job.Status.FAILED.getKey());
+        job.setContentJobStatus(Job.Status.FAILED.getKey());
         job.setStatus(Job.Status.FAILED.getKey());
         job.setRuleResults(errors);
         job.setUsageScore(0);
