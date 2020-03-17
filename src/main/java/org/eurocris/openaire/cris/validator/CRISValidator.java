@@ -11,6 +11,7 @@ import org.eurocris.openaire.cris.validator.tree.CERIFNode;
 import org.eurocris.openaire.cris.validator.util.CheckingIterable;
 import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
 import org.eurocris.openaire.cris.validator.util.XmlUtils;
 import org.openarchives.oai._2.*;
 import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
@@ -153,6 +154,11 @@ public class CRISValidator {
         methodsMap = Collections.unmodifiableMap(methods);
     }
 
+    /**
+     * Weights for every rule (method).
+     */
+    private Map<String, Float> ruleWeights;
+
     private static ThreadLocal<OAIPMHEndpoint> endpoint = new ThreadLocal<>();
 
     public static ThreadLocal<OAIPMHEndpoint> getEndpoint() {
@@ -173,6 +179,7 @@ public class CRISValidator {
             Object results = method.invoke(this);
             if (results != null) {
                 ((RuleResults) results).setRuleMethodName(methodName);
+                ((RuleResults) results).setWeight(ruleWeights.get(methodName));
                 ((RuleResults) results).setType(methodsMap.get(methodName));
                 return (RuleResults) results;
             }
@@ -184,7 +191,7 @@ public class CRISValidator {
             logger.error("ERROR", e);
             error = new ValidationError(e.getCause().getMessage());
         }
-        return new RuleResults(methodName, methodsMap.get(methodName), -1, 0, 0, Collections.singletonList(error));
+        return new RuleResults(methodName, ruleWeights.get(methodName), methodsMap.get(methodName), -1, 0, 0, Collections.singletonList(error));
     }
 
     /**
@@ -214,6 +221,7 @@ public class CRISValidator {
      * @throws SAXException
      */
     public CRISValidator(String endpointUrl, String id) throws MalformedURLException, SAXException {
+        this.ruleWeights = PropertiesUtils.getRuleWeights("/cris.properties");
         endpoint.set(
                 new OAIPMHEndpoint(new URL(endpointUrl), getParserSchema(), new FileLoggingConnectionStreamFactory("data/" + id))
         );
@@ -664,15 +672,26 @@ public class CRISValidator {
     /**
      * Test the accummulated data for consistence – checks (5a) and (5b).
      */
-    public void check990_CheckReferentialIntegrityAndFunctionalDependency() { // TODO: return ValidationResults ??
+    public RuleResults check990_CheckReferentialIntegrityAndFunctionalDependency() {
+        RuleResults ruleResults = new RuleResults();
         for (final Map.Entry<String, CERIFNode> entry : recordsByOaiIdentifier.entrySet()) {
             final String oaiIdentifier = entry.getKey();
             final CERIFNode node = entry.getValue();
             // for all harvested CERIF data, check the children of the main objects (no need to check the objects themselves, they satisfy all checks trivially)
             for (final CERIFNode node3 : node.getChildren(null)) {
-                lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(node3, oaiIdentifier);
+                ruleResults.incrCount();
+                try {
+                    lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(node3, oaiIdentifier);
+                } catch (ValidationMethodException e) {
+                    ruleResults.incrFailed();
+                    ruleResults.addError(new ValidationError(e.getMessage(), node3));
+                } catch (ValidationRuleException e) {
+                    ruleResults.incrFailed();
+                    ruleResults.addError(ValidationError.of(e));
+                }
             }
         }
+        return ruleResults;
     }
 
     private void lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(final CERIFNode node, final String oaiIdentifier) {
@@ -689,18 +708,21 @@ public class CRISValidator {
 
     private void doCheckFunctionalDependency(final CERIFNode node, final String oaiIdentifier) {
         final String name = node.getName();
+        logger.debug(" doCheckFunctionalDependency() \nOAI Identifier: {}\nNode name: {}", oaiIdentifier, node.getName());
         if (name.contains("[@id=\"")) {
             final CERIFNode baseNode = recordsByName.get(name);
             if (baseNode == null) {
                 String error = String.format("Record for %s not found, referential integrity violated in %s (5a)", name, oaiIdentifier);
                 logger.error(error);
-                throw new ValidationMethodException(error);
+                throw new ValidationRuleException(error, baseNode);
+//                throw new ValidationMethodException(error);
             }
             if (!node.isSubsetOf(baseNode)) {
                 final CERIFNode missingNode = node.reportWhatIMiss(baseNode).get();
-                String error = "Violation of (5b) in " + oaiIdentifier + ":\n" + node + "is not subset of\n" + baseNode + "missing is\n" + missingNode;
+                String error = "Violation of (5b) in " + oaiIdentifier + ":\n" + node + "is not subset of\n" + baseNode + " missing is\n" + missingNode;
                 logger.error(error);
-                throw new ValidationMethodException(error);
+                throw new ValidationRuleException(error, missingNode);
+//                throw new ValidationMethodException(error);
             }
         }
     }

@@ -8,6 +8,7 @@ import java.util.List;
 public class RuleResults {
 
     private String ruleMethodName;
+    private float weight;
     private String type;
     private int ruleId = -1;
     private long count = 0;
@@ -17,8 +18,9 @@ public class RuleResults {
     public RuleResults() {
     }
 
-    public RuleResults(String ruleMethodName, String type, int ruleId, long count, long failed, List<ValidationError> errors) {
+    public RuleResults(String ruleMethodName, float weight, String type, int ruleId, long count, long failed, List<ValidationError> errors) {
         this.ruleMethodName = ruleMethodName;
+        this.weight = weight;
         this.type = type;
         this.ruleId = ruleId;
         this.count = count;
@@ -27,7 +29,7 @@ public class RuleResults {
     }
 
     public void incrCount() {
-        this.failed++;
+        this.count++;
     }
 
     public void incrFailed() {
@@ -46,6 +48,14 @@ public class RuleResults {
 
     public void setRuleMethodName(String ruleMethodName) {
         this.ruleMethodName = ruleMethodName;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public void setWeight(float weight) {
+        this.weight = weight;
     }
 
     public String getType() {
