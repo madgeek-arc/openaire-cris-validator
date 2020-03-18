@@ -27,10 +27,11 @@ public class MainForTesting {
 
         String[] urls = new String[]{
                 "https://dwitjutife1.csc.fi/api/cerif",
+                "https://virta-jtp.csc.fi/api/cerif",
 //                "https://devel.atira.dk/eurocris/ws/oai",
 //                "https://devel.atira.dk/eurocris/ws/oai",
 //                "http://services.nod.dans.knaw.nl/oa-cerif",
-                "https://oamemtfa.uci.ru.nl/metis-oaipmh-endpoint/OAIHandler"
+//                "https://oamemtfa.uci.ru.nl/metis-oaipmh-endpoint/OAIHandler"
         };
 
         for (String url : urls) {
@@ -40,7 +41,7 @@ public class MainForTesting {
         }
 
         try {
-            executor.awaitTermination(5, TimeUnit.MINUTES);
+            executor.awaitTermination(2, TimeUnit.MINUTES);
             dao.getAll().forEach(job -> logger.info(job.getStatus()));
         } catch (InterruptedException e) {
             logger.error("ERROR", e);
@@ -51,8 +52,8 @@ public class MainForTesting {
         executor.shutdown();
         StringBuilder report = new StringBuilder();
         for (Job job : dao.getAll()) {
-            report.append(String.format("%nJob [%s]%nurl:\t\t\t%s%nuser:\t\t\t%s%nstatus:\t\t\t%s%nscore:\t\t\t%s%ndate submitted:\t%s%ndate started:\t%s%ndate finished:\t%s%n%n%n",
-                    job.getId(), job.getUrl(), job.getUser(), job.getStatus(), job.getScore(), job.getDateSubmitted(), job.getDateStarted(), job.getDateFinished()));
+            report.append(String.format("%nJob [%s]%nurl:\t\t\t%s%nuser:\t\t\t%s%nstatus:\t\t\t%s%nusage score:\t\t%s%ncontent score:\t\t%s%ndate submitted:\t%s%ndate started:\t%s%ndate finished:\t%s%n%n%n",
+                    job.getId(), job.getUrl(), job.getUser(), job.getStatus(), job.getUsageScore(), job.getContentScore(), job.getDateSubmitted(), job.getDateStarted(), job.getDateFinished()));
         }
         logger.info(report);
     }

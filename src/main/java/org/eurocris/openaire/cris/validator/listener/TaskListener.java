@@ -1,6 +1,10 @@
 package org.eurocris.openaire.cris.validator.listener;
 
-public interface TaskListener<T> {
+import org.eurocris.openaire.cris.validator.model.RuleResults;
+
+import java.util.List;
+
+public interface TaskListener {
 
     /**
      * Task started.
@@ -12,13 +16,13 @@ public interface TaskListener<T> {
      *
      * @param results
      */
-    void finished(T results);
+    void finished(List<RuleResults> results);
 
     /**
      * Task failed. Handle errors {@param errors}.
      *
      * @param errors
      */
-    void failed(T errors);
+    void failed(List<RuleResults> errors);
 
 }

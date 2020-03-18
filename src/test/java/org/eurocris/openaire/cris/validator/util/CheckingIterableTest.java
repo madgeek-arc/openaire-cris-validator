@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
 import org.junit.Test;
 
 /**
@@ -45,7 +46,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find an entry in an empty collection.
 	 */
-	@Test( expected = MyException.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testEmptyFind() {
 		final List<String> list = Collections.emptyList();
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -67,7 +68,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find one word in a singleton list containing a different word.
 	 */
-	@Test( expected = MyException.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testSingletonFindNo() {
 		final List<String> list = Collections.singletonList( "hello" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -100,7 +101,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find a word that is not contained in a two-words list.
 	 */
-	@Test( expected = MyException.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testTwoEntriesFindNone() {
 		final List<String> list = Arrays.asList( "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -123,7 +124,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find a word that is not contained in a three-words list.
 	 */
-	@Test( expected = MyException3.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testThreeEntriesFindTwoButNotThird() {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -136,7 +137,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do find all three words from a three-words list.
 	 */
-	@Test( expected = MyException1.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testThreeEntriesFindTwoButNotThirdReordered() {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );

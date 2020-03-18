@@ -1,7 +1,5 @@
 package org.eurocris.openaire.cris.validator.model;
 
-import org.eurocris.openaire.cris.validator.util.ValidatorRuleResults;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -11,17 +9,23 @@ public class Job {
     private String url;
     private String user;
     private String status;
-    private int score = 0;
+    private int usageScore = 0;
+    private int contentScore = 0;
+    private int recordsTested = 0;
+
+    private String usageJobStatus;
+    private String contentJobStatus;
 
     private Date dateSubmitted;
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private Map<String, ValidatorRuleResults> ruleResults = new LinkedHashMap<>();
+    private List<RuleResults> ruleResults = new LinkedList<>();
 
     public enum Status {
         PENDING("pending"),
         ONGOING("ongoing"),
+        FINISHED("finished"),
         SUCCESSFUL("successful"),
         FAILED("failed");
 
@@ -65,14 +69,6 @@ public class Job {
         this.dateSubmitted = new Date();
     }
 
-    public int getScore() {
-        return score;
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
     public String getId() {
         return id;
     }
@@ -105,6 +101,46 @@ public class Job {
         this.status = status;
     }
 
+    public int getUsageScore() {
+        return usageScore;
+    }
+
+    public void setUsageScore(int usageScore) {
+        this.usageScore = usageScore;
+    }
+
+    public int getContentScore() {
+        return contentScore;
+    }
+
+    public void setContentScore(int contentScore) {
+        this.contentScore = contentScore;
+    }
+
+    public int getRecordsTested() {
+        return recordsTested;
+    }
+
+    public void setRecordsTested(int recordsTested) {
+        this.recordsTested = recordsTested;
+    }
+
+    public String getUsageJobStatus() {
+        return usageJobStatus;
+    }
+
+    public void setUsageJobStatus(String usageJobStatus) {
+        this.usageJobStatus = usageJobStatus;
+    }
+
+    public String getContentJobStatus() {
+        return contentJobStatus;
+    }
+
+    public void setContentJobStatus(String contentJobStatus) {
+        this.contentJobStatus = contentJobStatus;
+    }
+
     public Date getDateSubmitted() {
         return dateSubmitted;
     }
@@ -129,11 +165,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public Map<String, ValidatorRuleResults> getRuleResults() {
+    public List<RuleResults> getRuleResults() {
         return ruleResults;
     }
 
-    public void setRuleResults(Map<String, ValidatorRuleResults> ruleResults) {
+    public void setRuleResults(List<RuleResults> ruleResults) {
         this.ruleResults = ruleResults;
     }
 }

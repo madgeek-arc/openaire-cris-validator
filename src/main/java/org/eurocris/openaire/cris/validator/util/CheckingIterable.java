@@ -1,6 +1,12 @@
 package org.eurocris.openaire.cris.validator.util;
 
 import junit.framework.AssertionFailedError;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.eurocris.openaire.cris.validator.exception.ValidationMethodException;
+import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
+import org.eurocris.openaire.cris.validator.model.ValidationError;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,7 +25,8 @@ import static org.junit.Assert.assertEquals;
  */
 public abstract class CheckingIterable<T> implements Iterable<T> {
 
-	protected ValidatorRuleResults results = new ValidatorRuleResults();
+	private static final Logger logger = LogManager.getLogger(CheckingIterable.class);
+	protected RuleResults results = new RuleResults();
 
 	/**
 	 * Iterate through the elements and call {@link #close()} at the end.
@@ -31,9 +38,16 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 		while ( it.hasNext() ) {
 			try {
 				it.next();
-			} catch (Throwable e) {
+			} catch (ValidationRuleException ve) {
 				results.incrFailed();
-				results.addError(e.getMessage());
+				results.addError(ValidationError.of(ve));
+			} catch (ValidationMethodException e) {
+				results.incrFailed();
+				results.addError(new ValidationError(e.getMessage()));
+			} catch (Throwable e) {
+				logger.error("ERROR", e);
+				results.incrFailed();
+				results.addError(new ValidationError(e.getMessage()));
 			}
 			++n;
 		}
@@ -51,7 +65,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * Retrieve validation results.
 	 * @return
 	 */
-	public ValidatorRuleResults getResults() {
+	public RuleResults getResults() {
 		return results;
 	}
 
@@ -108,7 +122,8 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 			protected void close() {
 				parentChecker.close();
 				if ( mci.getCount() == 0L ) {
-					throw error;
+					throw new ValidationRuleException(error.getMessage());
+//					throw error;
 				}
 			}
 
@@ -138,10 +153,10 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 				parentChecker.close();
 				final long cnt = mci.getCount();
 				if ( cnt == 0L ) {
-					throw new AssertionError( collectionSpec + " does not contain " + matchingObjectSpec );
+					throw new ValidationRuleException( collectionSpec + " does not contain " + matchingObjectSpec );
 				}
 				if ( cnt > 1L ) {
-					throw new AssertionError( collectionSpec + " contains " + cnt + " instances of " + matchingObjectSpec );
+					throw new ValidationRuleException( collectionSpec + " contains " + cnt + " instances of " + matchingObjectSpec );
 				}
 			}
 
@@ -203,7 +218,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 						final T obj = parentIterator.next();
 						final boolean match = predicate.test( obj );
 						if ( ! match ) {
-							throw new AssertionFailedError( message + "; object: " + obj );
+							throw new ValidationRuleException( message + "; object: " + obj, obj );
 						}
 						return obj;
 					}
@@ -233,7 +248,9 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 			public boolean test( final T obj ) {
 				final U expectedValue = expectedFunction.apply( obj );
 				final U realValue = realFunction.apply( obj );
-				assertEquals( message, expectedValue, realValue );
+				if (!expectedValue.equals(realValue)) {
+					throw new ValidationRuleException(message + "\n\tvalue:\t\t\t" + realValue + "\n\texpected value:\t" + expectedValue, obj);
+				}
 				return true;
 			}
 
@@ -266,7 +283,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 						final T obj = parentIterator.next();
 						final U val = function.apply( obj );
 						if ( val != null && !seenValues.add( val ) ) {
-							throw new AssertionFailedError( message + "; value: " + val );
+							throw new ValidationRuleException( message + "; value: " + val, obj );
 						}
 						return obj;
 					}
