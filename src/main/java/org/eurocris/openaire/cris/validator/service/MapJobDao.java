@@ -35,6 +35,9 @@ public class MapJobDao implements JobDao {
 
     @Override
     public List<Job> getJobs(String userId, String validationStatus) {
+        if (validationStatus.equals("all")) {
+            return getJobs(userId);
+        }
         List<Job> jobsList = new LinkedList<>();
         for (Map.Entry<String, Job> entry : jobs.entrySet()) {
             if (entry.getValue().getUser().equals(userId) && entry.getValue().getStatus().equals(validationStatus)) {
