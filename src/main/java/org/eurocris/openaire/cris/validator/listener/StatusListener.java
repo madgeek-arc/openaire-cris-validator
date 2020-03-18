@@ -44,6 +44,7 @@ public class StatusListener implements TaskListener {
         job.setStatus(Job.Status.SUCCESSFUL.getKey());
         job.setDateFinished(new Date());
         job.setRuleResults(results);
+        job.setRecordsTested(recordsTested(results));
         job.setUsageScore(createScore(results, ruleWeights, CRISValidator.USAGE));
         job.setContentScore(createScore(results, ruleWeights, CRISValidator.CONTENT));
         if (job.getUsageScore() <= 50 || job.getContentScore() <= 50) {
@@ -59,6 +60,7 @@ public class StatusListener implements TaskListener {
         job.setContentJobStatus(Job.Status.FAILED.getKey());
         job.setStatus(Job.Status.FAILED.getKey());
         job.setRuleResults(errors);
+        job.setRecordsTested(recordsTested(errors));
         job.setUsageScore(0);
         job.setContentScore(0);
         dao.save(job);
@@ -88,5 +90,17 @@ public class StatusListener implements TaskListener {
             }
         }
         return Math.round(score);
+    }
+
+    private int recordsTested(ValidationResults results) {
+        int records = 0;
+        if (results != null && !results.isEmpty()) {
+            for (Map.Entry<String, RuleResults> entry : results.entrySet()){
+                if (entry.getValue().getType().equals(CRISValidator.CONTENT)) {
+                    records += entry.getValue().getCount();
+                }
+            }
+        }
+        return records;
     }
 }

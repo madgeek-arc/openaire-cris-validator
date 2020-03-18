@@ -403,11 +403,11 @@ public class CRISValidator {
                         final DocumentBuilder db = dbf.newDocumentBuilder();
                         final String schemaUrl = mf.getSchema();
                         if (!schemaUrl.startsWith(OPENAIRE_CERIF_SCHEMAS_ROOT)) {
-                            logger.error(String.format("Schema url: %s - should start with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMAS_ROOT));
+                            logger.info(String.format("ERROR: Schema url: %s - should start with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMAS_ROOT));
                             throw new ValidationMethodException("Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2)");
                         }
                         if (!schemaUrl.endsWith("/" + OPENAIRE_CERIF_SCHEMA_FILENAME)) {
-                            logger.error(String.format("Schema url: %s - should end with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMA_FILENAME));
+                            logger.info(String.format("ERROR: Schema url: %s - should end with: %s", schemaUrl, OPENAIRE_CERIF_SCHEMA_FILENAME));
                             throw new ValidationMethodException("The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2)");
                         }
                         final String realSchemaUrl = (schemaUrl.equals(CURRENT_XML_SCHEMA_URL_PREFIX + OPENAIRE_CERIF_SCHEMA_FILENAME))
@@ -418,7 +418,7 @@ public class CRISValidator {
                         final Element schemaRootEl = doc.getDocumentElement();
                         final String targetNsUri = schemaRootEl.getAttribute("targetNamespace");
                         if (!mf.getMetadataNamespace().equals(targetNsUri)) {
-                            logger.error("The schema does not have the advertised target namespace URI (2)");
+                            logger.info("ERROR: The schema does not have the advertised target namespace URI (2)");
                             throw new ValidationMethodException("The schema does not have the advertised target namespace URI (2)");
                         }
                     } catch (final ParserConfigurationException | SAXException | IOException e) {
@@ -461,7 +461,7 @@ public class CRISValidator {
             public boolean test(final SetType s) {
                 if (expectedSetSpec.equals(s.getSetSpec())) {
                     if (!expectedSetName.equals(s.getSetName())) {
-                        logger.error(String.format("Non-matching set name for set '%s' (3)", expectedSetSpec));
+                        logger.info(String.format("ERROR: Non-matching set name for set '%s' (3)", expectedSetSpec));
                         throw new ValidationMethodException(String.format("Non-matching set name for set '%s' (3)", expectedSetSpec));
                     }
                     return true;
@@ -642,11 +642,11 @@ public class CRISValidator {
                     if (obj instanceof Element) {
                         final Element el = (Element) obj;
                         if (!expectedQName.getNamespaceURI().equals(el.getNamespaceURI())) {
-                            logger.error("The payload element not in the right namespace");
+                            logger.info("ERROR: The payload element not in the right namespace");
                             throw new ValidationMethodException("The payload element not in the right namespace");
                         }
                         if (!expectedQName.getLocalPart().equals(el.getLocalName())) {
-                            logger.error("The payload element does not have the right local name");
+                            logger.info("ERROR: The payload element does not have the right local name");
                             throw new ValidationMethodException("The payload element does not have the right local name");
                         }
                         validateMetadataPayload(el);
@@ -708,19 +708,19 @@ public class CRISValidator {
 
     private void doCheckFunctionalDependency(final CERIFNode node, final String oaiIdentifier) {
         final String name = node.getName();
-        logger.debug(" doCheckFunctionalDependency() \nOAI Identifier: {}\nNode name: {}", oaiIdentifier, node.getName());
+        logger.info(" doCheckFunctionalDependency() \nOAI Identifier: {}\nNode name: {}", oaiIdentifier, node.getName());
         if (name.contains("[@id=\"")) {
             final CERIFNode baseNode = recordsByName.get(name);
             if (baseNode == null) {
                 String error = String.format("Record for %s not found, referential integrity violated in %s (5a)", name, oaiIdentifier);
-                logger.error(error);
+                logger.info("ERROR: doCheckFunctionalDependency()\n{}", error);
                 throw new ValidationRuleException(error, baseNode);
 //                throw new ValidationMethodException(error);
             }
             if (!node.isSubsetOf(baseNode)) {
                 final CERIFNode missingNode = node.reportWhatIMiss(baseNode).get();
                 String error = "Violation of (5b) in " + oaiIdentifier + ":\n" + node + "is not subset of\n" + baseNode + " missing is\n" + missingNode;
-                logger.error(error);
+                logger.info("ERROR: doCheckFunctionalDependency()\n{}", error);
                 throw new ValidationRuleException(error, missingNode);
 //                throw new ValidationMethodException(error);
             }
@@ -755,7 +755,7 @@ public class CRISValidator {
                     final String msg = exception.getMessage();
                     if (msg.startsWith("cvc-pattern-valid: ")) {
                         patternValidErrorSignalled = true;
-                        logger.error("In " + elString + ": " + msg);
+                        logger.info("ERROR: In " + elString + ": " + msg);
                         throw exception; // TODO: is this needed here?
                     } else {
                         if (!(patternValidErrorSignalled && msg.startsWith("cvc-complex-type.2.2: "))) {

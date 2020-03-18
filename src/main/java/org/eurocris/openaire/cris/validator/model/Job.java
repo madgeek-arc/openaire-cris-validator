@@ -11,6 +11,7 @@ public class Job {
     private String status;
     private int usageScore = 0;
     private int contentScore = 0;
+    private int recordsTested = 0;
 
     private String usageJobStatus;
     private String contentJobStatus;
@@ -114,6 +115,14 @@ public class Job {
 
     public void setContentScore(int contentScore) {
         this.contentScore = contentScore;
+    }
+
+    public int getRecordsTested() {
+        return recordsTested;
+    }
+
+    public void setRecordsTested(int recordsTested) {
+        this.recordsTested = recordsTested;
     }
 
     public String getUsageJobStatus() {
