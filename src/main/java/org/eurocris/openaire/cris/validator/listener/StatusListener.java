@@ -18,12 +18,9 @@ public class StatusListener implements TaskListener {
     private Job job;
     private JobDao dao;
 
-    private Map<String, Float> ruleWeights;
-
     public StatusListener(Job job, JobDao dao) {
         this.job = job;
         this.dao = dao;
-        this.ruleWeights = PropertiesUtils.getRuleWeights("/cris.properties");
         dao.save(job);
     }
 
@@ -45,8 +42,8 @@ public class StatusListener implements TaskListener {
         job.setDateFinished(new Date());
         job.setRuleResults(results);
         job.setRecordsTested(recordsTested(results));
-        job.setUsageScore(createScore(results, ruleWeights, CRISValidator.USAGE));
-        job.setContentScore(createScore(results, ruleWeights, CRISValidator.CONTENT));
+        job.setUsageScore(createScore(results, CRISValidator.USAGE));
+        job.setContentScore(createScore(results, CRISValidator.CONTENT));
         if (job.getUsageScore() <= 50 || job.getContentScore() <= 50) {
             job.setStatus(Job.Status.FAILED.getKey());
         }
@@ -67,24 +64,16 @@ public class StatusListener implements TaskListener {
         logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
     }
 
-    private int createScore(ValidationResults resultsMap, Map<String, Float> ruleWeights, String type) {
+    private int createScore(ValidationResults resultsMap, String type) {
         float score = 0;
-        int rulesCount = 0;
         if (resultsMap != null && !resultsMap.isEmpty()) {
             for (Map.Entry<String, RuleResults> rule : resultsMap.entrySet()) {
-                if (CRISValidator.methodsMap.get(rule.getKey()).equals(type)) {
-                    rulesCount++;
-                    if (rule.getValue() != null) {
-                        // rule score: (total - failed) / total
-                        float ruleScore = 0;
-                        if (rule.getValue().getCount() != 0) {
-                            ruleScore = (float) (rule.getValue().getCount() - rule.getValue().getFailed()) / rule.getValue().getCount();
-                            if (ruleWeights.get(rule.getKey()) != null) {
-                                score += ruleScore * ruleWeights.get(rule.getKey());
-                            } else {
-                                score += ruleScore / rulesCount * 100;
-                            }
-                        }
+                if (rule.getValue() != null && CRISValidator.methodsMap.get(rule.getKey()).equals(type)) {
+                    // rule score: (total - failed) / total
+                    float ruleScore = 0;
+                    if (rule.getValue().getCount() != 0) {
+                        ruleScore = (float) (rule.getValue().getCount() - rule.getValue().getFailed()) / rule.getValue().getCount();
+                        score += ruleScore * rule.getValue().getWeight();
                     }
                 }
             }
