@@ -20,7 +20,7 @@ public class Job {
     private Date dateStarted = null;
     private Date dateFinished = null;
 
-    private ValidationResults ruleResults = new ValidationResults();
+    private List<RuleResults> ruleResults = new LinkedList<>();
 
     public enum Status {
         PENDING("pending"),
@@ -165,11 +165,11 @@ public class Job {
         this.dateFinished = dateFinished;
     }
 
-    public ValidationResults getRuleResults() {
+    public List<RuleResults> getRuleResults() {
         return ruleResults;
     }
 
-    public void setRuleResults(ValidationResults ruleResults) {
+    public void setRuleResults(List<RuleResults> ruleResults) {
         this.ruleResults = ruleResults;
     }
 }

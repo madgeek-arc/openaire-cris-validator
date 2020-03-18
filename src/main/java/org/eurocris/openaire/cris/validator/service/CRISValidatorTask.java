@@ -6,10 +6,10 @@ import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
-import org.eurocris.openaire.cris.validator.model.ValidationResults;
 
 import java.util.Arrays;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 
 public class CRISValidatorTask implements Runnable {
 
@@ -26,7 +26,7 @@ public class CRISValidatorTask implements Runnable {
 
     @Override
     public void run() {
-        ValidationResults results = new ValidationResults();
+        List<RuleResults> results = new LinkedList<>();
         Arrays.stream(listeners).forEach(TaskListener::started);
         try {
             CRISValidator object = new CRISValidator(job.getUrl(), job.getId());
@@ -38,12 +38,12 @@ public class CRISValidatorTask implements Runnable {
             logger.error("ERROR", e);
             Arrays.stream(listeners).forEach(l -> l.failed(null));
         }
-        if (results != null && !results.entrySet().isEmpty()) {
-            for (Map.Entry<String, RuleResults> result : results.entrySet()) {
+        if (results != null && !results.isEmpty()) {
+            for (RuleResults result : results) {
                 StringBuilder errors = new StringBuilder();
-                result.getValue().getErrors().forEach(e -> errors.append(e.getMessage()).append('\n'));
-                logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getKey(),
-                        result.getValue().getCount(), result.getValue().getFailed(), errors);
+                result.getErrors().forEach(e -> errors.append(e.getMessage()).append('\n'));
+                logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getRuleMethodName(),
+                        result.getCount(), result.getFailed(), errors);
             }
             logger.info("Job[{}]\n\tUsage Score: {}\n\tContent Score: {}", job.getId(), job.getUsageScore(), job.getContentScore());
         }

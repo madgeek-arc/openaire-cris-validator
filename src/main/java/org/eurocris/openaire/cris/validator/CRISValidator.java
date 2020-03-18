@@ -6,7 +6,6 @@ import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFacto
 import org.eurocris.openaire.cris.validator.exception.ValidationMethodException;
 import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
 import org.eurocris.openaire.cris.validator.model.ValidationError;
-import org.eurocris.openaire.cris.validator.model.ValidationResults;
 import org.eurocris.openaire.cris.validator.tree.CERIFNode;
 import org.eurocris.openaire.cris.validator.util.CheckingIterable;
 import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
@@ -199,11 +198,11 @@ public class CRISValidator {
      *
      * @return {@link Map}
      */
-    public ValidationResults executeTests() {
-        ValidationResults methodResults = new ValidationResults();
+    public List<RuleResults> executeTests() {
+        List<RuleResults> methodResults = new LinkedList<>();
         try {
             for (Map.Entry<String, String> method : methodsMap.entrySet()) {
-                methodResults.put(method.getKey(), invokeMethod(method.getKey()));
+                methodResults.add(invokeMethod(method.getKey()));
             }
         } catch (NoSuchMethodException e) {
             logger.error("ERROR", e);

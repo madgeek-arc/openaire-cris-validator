@@ -4,13 +4,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.model.Job;
-import org.eurocris.openaire.cris.validator.model.ValidationResults;
-import org.eurocris.openaire.cris.validator.service.JobDao;
-import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.service.JobDao;
 
 import java.util.Date;
-import java.util.Map;
+import java.util.List;
 
 public class StatusListener implements TaskListener {
 
@@ -35,7 +33,7 @@ public class StatusListener implements TaskListener {
     }
 
     @Override
-    public void finished(ValidationResults results) {
+    public void finished(List<RuleResults> results) {
         job.setUsageJobStatus(Job.Status.FINISHED.getKey());
         job.setContentJobStatus(Job.Status.FINISHED.getKey());
         job.setStatus(Job.Status.SUCCESSFUL.getKey());
@@ -52,7 +50,7 @@ public class StatusListener implements TaskListener {
     }
 
     @Override
-    public void failed(ValidationResults errors) {
+    public void failed(List<RuleResults> errors) {
         job.setUsageJobStatus(Job.Status.FAILED.getKey());
         job.setContentJobStatus(Job.Status.FAILED.getKey());
         job.setStatus(Job.Status.FAILED.getKey());
@@ -64,16 +62,16 @@ public class StatusListener implements TaskListener {
         logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
     }
 
-    private int createScore(ValidationResults resultsMap, String type) {
+    private int createScore(List<RuleResults> ruleResults, String type) {
         float score = 0;
-        if (resultsMap != null && !resultsMap.isEmpty()) {
-            for (Map.Entry<String, RuleResults> rule : resultsMap.entrySet()) {
-                if (rule.getValue() != null && CRISValidator.methodsMap.get(rule.getKey()).equals(type)) {
+        if (ruleResults != null && !ruleResults.isEmpty()) {
+            for (RuleResults rule : ruleResults) {
+                if (CRISValidator.methodsMap.get(rule.getRuleMethodName()).equals(type)) {
                     // rule score: (total - failed) / total
                     float ruleScore = 0;
-                    if (rule.getValue().getCount() != 0) {
-                        ruleScore = (float) (rule.getValue().getCount() - rule.getValue().getFailed()) / rule.getValue().getCount();
-                        score += ruleScore * rule.getValue().getWeight();
+                    if (rule.getCount() != 0) {
+                        ruleScore = (float) (rule.getCount() - rule.getFailed()) / rule.getCount();
+                        score += ruleScore * rule.getWeight();
                     }
                 }
             }
@@ -81,12 +79,12 @@ public class StatusListener implements TaskListener {
         return Math.round(score);
     }
 
-    private int recordsTested(ValidationResults results) {
+    private int recordsTested(List<RuleResults> results) {
         int records = 0;
         if (results != null && !results.isEmpty()) {
-            for (Map.Entry<String, RuleResults> entry : results.entrySet()){
-                if (entry.getValue().getType().equals(CRISValidator.CONTENT)) {
-                    records += entry.getValue().getCount();
+            for (RuleResults ruleResults : results) {
+                if (ruleResults.getType().equals(CRISValidator.CONTENT)) {
+                    records += ruleResults.getCount();
                 }
             }
         }
