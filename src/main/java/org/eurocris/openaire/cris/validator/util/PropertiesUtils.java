@@ -43,8 +43,8 @@ public class PropertiesUtils {
         Map<String, String> ruleProperties = new TreeMap<>();
         String properties = getProperty(property, propertiesPath);
         properties = properties.replaceAll("[{}]", "");
-
-        for (String value : properties.split(",")) {
+        properties = properties.replace("',", "___");
+        for (String value : properties.split("___")) {
             value = value.replace("'", "");
             String[] ruleValue = value.split(":");
             if (ruleValue.length != 2) {
