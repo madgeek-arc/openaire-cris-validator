@@ -27,7 +27,6 @@ public class MapRuleDao implements RuleDao {
     @Value("#{${rule.descriptions}}")
     private Map<String, String> ruleDescriptions;
 
-    @Autowired
     public MapRuleDao() {
         int i = -1;
         Map<String, Float> weights = PropertiesUtils.getRuleWeights("/cris.properties");
