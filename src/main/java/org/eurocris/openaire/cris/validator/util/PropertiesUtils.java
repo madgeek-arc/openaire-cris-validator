@@ -40,19 +40,29 @@ public class PropertiesUtils {
     }
 
     public static Map<String, String> getRuleProperties(String propertiesPath, String property) {
-        Map<String, String> ruleDescriptions = new TreeMap<>();
-        String descriptions = getProperty(property, propertiesPath);
+        Map<String, String> ruleProperties = new TreeMap<>();
+        String properties = getProperty(property, propertiesPath);
+        properties = properties.replaceAll("[{}]", "");
 
-        for (String desc : descriptions.split(",")) {
-            desc = desc.replace("'", "");
-            String[] ruleValue = desc.split(":");
+        for (String value : properties.split(",")) {
+            value = value.replace("'", "");
+            String[] ruleValue = value.split(":");
             if (ruleValue.length != 2) {
-                logger.error("Error in property 'rule.descriptions' : '{}'.", desc);
+                if (ruleValue.length > 2) {
+                    StringBuilder joined = new StringBuilder();
+                    joined.append(ruleValue[1]);
+                    for (int i = 2; i < ruleValue.length; i++) {
+                        joined.append(":").append(ruleValue[i]);
+                    }
+                    ruleProperties.put(ruleValue[0], joined.toString());
+                } else {
+                    logger.error("Error in property 'rule.descriptions' : '{}'.", value);
+                }
             } else {
-                ruleDescriptions.put(ruleValue[0], ruleValue[1]);
+                ruleProperties.put(ruleValue[0], ruleValue[1]);
             }
         }
-        return ruleDescriptions;
+        return ruleProperties;
     }
 
     private PropertiesUtils() {}
