@@ -16,11 +16,13 @@ public class CRISValidatorTask implements Runnable {
     private static final Logger logger = LogManager.getLogger(CRISValidatorTask.class);
     private Job job;
     private JobDao jobDao;
+    private RuleDao ruleDao;
     private TaskListener[] listeners;
 
-    public CRISValidatorTask(Job job, JobDao jobDao, TaskListener... listeners) {
+    public CRISValidatorTask(Job job, JobDao jobDao, RuleDao ruleDao, TaskListener... listeners) {
         this.job = job;
         this.jobDao = jobDao;
+        this.ruleDao = ruleDao;
         this.listeners = listeners;
     }
 
@@ -29,7 +31,7 @@ public class CRISValidatorTask implements Runnable {
         List<RuleResults> results = new LinkedList<>();
         Arrays.stream(listeners).forEach(TaskListener::started);
         try {
-            CRISValidator object = new CRISValidator(job.getUrl(), job.getId());
+            CRISValidator object = new CRISValidator(job.getUrl(), job.getId(), ruleDao.getRuleMap());
             results = object.executeTests();
             for (TaskListener listener : listeners) {
                 listener.finished(results);
@@ -42,7 +44,7 @@ public class CRISValidatorTask implements Runnable {
             for (RuleResults result : results) {
                 StringBuilder errors = new StringBuilder();
                 result.getErrors().forEach(e -> errors.append(e.getMessage()).append('\n'));
-                logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getRuleMethodName(),
+                logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getRule().getRuleMethodName(),
                         result.getCount(), result.getFailed(), errors);
             }
             logger.info("Job[{}]\n\tUsage Score: {}\n\tContent Score: {}", job.getId(), job.getUsageScore(), job.getContentScore());

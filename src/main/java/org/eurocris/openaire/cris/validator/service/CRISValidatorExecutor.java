@@ -19,13 +19,15 @@ public class CRISValidatorExecutor implements JobExecutor {
 
     private static final Logger logger = LogManager.getLogger(CRISValidatorExecutor.class);
     private ExecutorService executor;
-    private JobDao dao;
+    private final JobDao jobDao;
+    private final RuleDao ruleDao;
 
 
     @Autowired
-    public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, JobDao dao) {
+    public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, JobDao jobDao, RuleDao ruleDao) {
         executor = Executors.newFixedThreadPool(threadNum);
-        this.dao = dao;
+        this.jobDao = jobDao;
+        this.ruleDao = ruleDao;
     }
 
     @PreDestroy
@@ -35,21 +37,21 @@ public class CRISValidatorExecutor implements JobExecutor {
 
     @Override
     public Optional<Job> getJob(String jobId) {
-        return dao.get(jobId);
+        return jobDao.get(jobId);
     }
 
     @Override
     public String getStatus(String jobId) {
-        if (dao.get(jobId).isPresent()) {
-            return dao.get(jobId).get().getStatus();
+        if (jobDao.get(jobId).isPresent()) {
+            return jobDao.get(jobId).get().getStatus();
         }
         return "";
     }
 
     @Override
     public Job submit(Job job) {
-        TaskListener listener = new StatusListener(job, dao);
-        executor.submit(() -> new CRISValidatorTask(job, dao, listener).run());
+        TaskListener listener = new StatusListener(job, jobDao);
+        executor.submit(() -> new CRISValidatorTask(job, jobDao, ruleDao, listener).run());
         return job;
     }
 

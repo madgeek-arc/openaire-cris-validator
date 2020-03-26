@@ -12,7 +12,7 @@ public class SamplesTest extends CRISValidator {
 
     @SuppressWarnings("javadoc")
     public SamplesTest() throws MalformedURLException, SAXException {
-        super("file:samples/", "test");
+        super("file:samples/", "test", null);
     }
 
 }

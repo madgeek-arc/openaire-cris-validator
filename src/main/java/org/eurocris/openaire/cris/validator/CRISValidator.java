@@ -5,12 +5,12 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
 import org.eurocris.openaire.cris.validator.exception.ValidationMethodException;
 import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
+import org.eurocris.openaire.cris.validator.model.Rule;
 import org.eurocris.openaire.cris.validator.model.ValidationError;
 import org.eurocris.openaire.cris.validator.tree.CERIFNode;
 import org.eurocris.openaire.cris.validator.util.CheckingIterable;
 import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
-import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
 import org.eurocris.openaire.cris.validator.util.XmlUtils;
 import org.openarchives.oai._2.*;
 import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
@@ -154,9 +154,9 @@ public class CRISValidator {
     }
 
     /**
-     * Weights for every rule (method).
+     * Map of rule method names and corresponding rules.
      */
-    private Map<String, Float> ruleWeights;
+    private Map<String, Rule> rules;
 
     private static ThreadLocal<OAIPMHEndpoint> endpoint = new ThreadLocal<>();
 
@@ -177,9 +177,7 @@ public class CRISValidator {
         try {
             Object results = method.invoke(this);
             if (results != null) {
-                ((RuleResults) results).setRuleMethodName(methodName);
-                ((RuleResults) results).setWeight(ruleWeights.get(methodName));
-                ((RuleResults) results).setType(methodsMap.get(methodName));
+                ((RuleResults) results).setRule(rules.get(methodName));
                 return (RuleResults) results;
             }
         } catch (ValidationRuleException e) {
@@ -190,7 +188,7 @@ public class CRISValidator {
             logger.error("ERROR", e);
             error = new ValidationError(e.getCause().getMessage());
         }
-        return new RuleResults(methodName, ruleWeights.get(methodName), methodsMap.get(methodName), -1, 0, 0, Collections.singletonList(error));
+        return new RuleResults(rules.get(methodName), 0, 0, Collections.singletonList(error));
     }
 
     /**
@@ -219,8 +217,8 @@ public class CRISValidator {
      * @throws MalformedURLException
      * @throws SAXException
      */
-    public CRISValidator(String endpointUrl, String id) throws MalformedURLException, SAXException {
-        this.ruleWeights = PropertiesUtils.getRuleWeights("/cris.properties");
+    public CRISValidator(String endpointUrl, String id, Map<String, Rule> rules) throws MalformedURLException, SAXException {
+        this.rules = rules;
         endpoint.set(
                 new OAIPMHEndpoint(new URL(endpointUrl), getParserSchema(), new FileLoggingConnectionStreamFactory("data/" + id))
         );

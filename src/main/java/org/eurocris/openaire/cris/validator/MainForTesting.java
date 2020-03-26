@@ -5,9 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.listener.StatusListener;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
-import org.eurocris.openaire.cris.validator.service.CRISValidatorTask;
-import org.eurocris.openaire.cris.validator.service.JobDao;
-import org.eurocris.openaire.cris.validator.service.MapJobDao;
+import org.eurocris.openaire.cris.validator.service.*;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,6 +22,7 @@ public class MainForTesting {
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
         JobDao dao = new MapJobDao();
+        RuleDao ruleDao = new MapRuleDao();
 
         String[] urls = new String[]{
                 "https://dwitjutife1.csc.fi/api/cerif",
@@ -37,7 +36,7 @@ public class MainForTesting {
         for (String url : urls) {
             Job job = new Job(url, "me");
             TaskListener listener = new StatusListener(job, dao);
-            executor.submit(() -> new CRISValidatorTask(job, dao, listener).run());
+            executor.submit(() -> new CRISValidatorTask(job, dao, ruleDao, listener).run());
         }
 
         try {

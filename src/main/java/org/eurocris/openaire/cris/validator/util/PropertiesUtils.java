@@ -31,12 +31,28 @@ public class PropertiesUtils {
             weight = weight.replace("'", "");
             String[] ruleValue = weight.split(":");
             if (ruleValue.length != 2) {
-                logger.warn("Error in property 'rule.weights' : '{}'.  Using default value", weight);
+                logger.error("Error in property 'rule.weights' : '{}'.", weight);
             } else {
                 ruleWeights.put(ruleValue[0], Float.parseFloat(ruleValue[1]));
             }
         }
         return ruleWeights;
+    }
+
+    public static Map<String, String> getRuleDescriptions(String propertiesPath) {
+        Map<String, String> ruleDescriptions = new TreeMap<>();
+        String descriptions = getProperty("rule.descriptions", propertiesPath);
+
+        for (String desc : descriptions.split(",")) {
+            desc = desc.replace("'", "");
+            String[] ruleValue = desc.split(":");
+            if (ruleValue.length != 2) {
+                logger.error("Error in property 'rule.descriptions' : '{}'.", desc);
+            } else {
+                ruleDescriptions.put(ruleValue[0], ruleValue[1]);
+            }
+        }
+        return ruleDescriptions;
     }
 
     private PropertiesUtils() {}

@@ -65,13 +65,13 @@ public class StatusListener implements TaskListener {
     private int createScore(List<RuleResults> ruleResults, String type) {
         float score = 0;
         if (ruleResults != null && !ruleResults.isEmpty()) {
-            for (RuleResults rule : ruleResults) {
-                if (CRISValidator.methodsMap.get(rule.getRuleMethodName()).equals(type)) {
+            for (RuleResults rResults : ruleResults) {
+                if (CRISValidator.methodsMap.get(rResults.getRule().getRuleMethodName()).equals(type)) {
                     // rule score: (total - failed) / total
                     float ruleScore = 0;
-                    if (rule.getCount() != 0) {
-                        ruleScore = (float) (rule.getCount() - rule.getFailed()) / rule.getCount();
-                        score += ruleScore * rule.getWeight();
+                    if (rResults.getCount() != 0) {
+                        ruleScore = (float) (rResults.getCount() - rResults.getFailed()) / rResults.getCount();
+                        score += ruleScore * rResults.getRule().getWeight();
                     }
                 }
             }
@@ -83,7 +83,7 @@ public class StatusListener implements TaskListener {
         int records = 0;
         if (results != null && !results.isEmpty()) {
             for (RuleResults ruleResults : results) {
-                if (ruleResults.getType().equals(CRISValidator.CONTENT)) {
+                if (ruleResults.getRule().getType().equals(CRISValidator.CONTENT)) {
                     records += ruleResults.getCount();
                 }
             }
