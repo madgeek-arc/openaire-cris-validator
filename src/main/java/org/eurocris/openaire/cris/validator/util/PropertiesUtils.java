@@ -39,9 +39,9 @@ public class PropertiesUtils {
         return ruleWeights;
     }
 
-    public static Map<String, String> getRuleDescriptions(String propertiesPath) {
+    public static Map<String, String> getRuleProperties(String propertiesPath, String property) {
         Map<String, String> ruleDescriptions = new TreeMap<>();
-        String descriptions = getProperty("rule.descriptions", propertiesPath);
+        String descriptions = getProperty(property, propertiesPath);
 
         for (String desc : descriptions.split(",")) {
             desc = desc.replace("'", "");
