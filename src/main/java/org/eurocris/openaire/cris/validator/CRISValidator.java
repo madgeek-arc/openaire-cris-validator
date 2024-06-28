@@ -9,6 +9,8 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
@@ -17,14 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -151,27 +146,27 @@ public class CRISValidator {
 	/**
 	 * The connection stream factory to use for getting the response stream from a connection.
 	 */
-	public static final ConnectionStreamFactory CONN_STREAM_FACTORY = new FileLoggingConnectionStreamFactory( "data" );
+	public final ConnectionStreamFactory CONN_STREAM_FACTORY = new FileLoggingConnectionStreamFactory( "data" );
 
-	private static final Map<String, MetadataFormatType> metadataFormatsByPrefix = new HashMap<>();
+	private final Map<String, MetadataFormatType> metadataFormatsByPrefix = new HashMap<>();
 
-	private static final Map<String, String> schemaUrlsByNs = new HashMap<>();
-	private static final Map<String, String> nssBySchemaUrl = new HashMap<>();
+	private final Map<String, String> schemaUrlsByNs = new HashMap<>();
+	private final Map<String, String> nssBySchemaUrl = new HashMap<>();
 
-	/**
-	 * The main method: used for running the JUnit4 test suite from the command line.
-	 * The first command line argument should be the URL of the endpoint to test.
-	 * @param args command line arguments
-	 * @throws Exception any uncaught exception
-	 */
-	public static void main( final String[] args ) throws Exception {
-		final String endpointUrl = ( args.length > 0 ) ? args[0] : null;
-		final URL endpointBaseUrl = URI.create( endpointUrl ).toURL();
-		endpoint = new OAIPMHEndpoint( endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY );
-		JUnitCore.main( CRISValidator.class.getName() );
-	}
+//	/**
+//	 * The main method: used for running the JUnit4 test suite from the command line.
+//	 * The first command line argument should be the URL of the endpoint to test.
+//	 * @param args command line arguments
+//	 * @throws Exception any uncaught exception
+//	 */
+//	public static void main( final String[] args ) throws Exception {
+//		final String endpointUrl = ( args.length > 0 ) ? args[0] : null;
+//		final URL endpointBaseUrl = URI.create( endpointUrl ).toURL();
+//		endpoint = new OAIPMHEndpoint( endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY );
+//		JUnitCore.main( CRISValidator.class.getName() );
+//	}
 
-	private static OAIPMHEndpoint endpoint;
+	private OAIPMHEndpoint endpoint;
 
 	/**
 	 * Set up the test suite.
@@ -209,6 +204,44 @@ public class CRISValidator {
 		}
 	}
 
+    /**
+     * Invokes the validation method named {@param methodName}.
+     *
+     * @param method
+     * @return
+     */
+    public RuleResults invokeMethod(Method method) {
+        ValidationError error = null;
+        try {
+            Object results = method.invoke(this);
+            if (results != null) {
+                ((RuleResults) results).setRule(rules.get(methodName));
+                return (RuleResults) results;
+            }
+        } catch (AssertionError e) {
+            error = new ValidationError(e.getCause().getMessage(), e);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            logger.error("ERROR", e);
+            error = new ValidationError(e.getCause().getMessage());
+        }
+        return new RuleResults(rules.get(methodName), 0, 0, Collections.singletonList(error));
+    }
+
+    /**
+     * Method that executes the validation tests, gathers their output and returns them as a list.
+     *
+     * @return the list of results
+     */
+	private List<RuleResults> runTests() {
+        List<RuleResults> methodResults = new LinkedList<>();
+		for (Method method : CRISValidator.class.getDeclaredMethods()) {
+			if (Arrays.stream(method.getDeclaredAnnotations()).anyMatch(a -> a instanceof Test)) {
+                methodResults.add(invokeMethod(method));
+            }
+		}
+        return methodResults;
+	}
+
 	/**
 	 * @return the URL of the endpoint
 	 */
@@ -216,7 +249,7 @@ public class CRISValidator {
 		return endpoint.getBaseUrl();
 	}
 
-	private static Schema getSchema( final StreamSource ... sources ) throws IOException, SAXException, ParserConfigurationException {
+	private Schema getSchema( final StreamSource ... sources ) throws IOException, SAXException, ParserConfigurationException {
 		final List<Source> schemaList = new ArrayList<>();
 		for ( final StreamSource source : sources ) {
 			schemaList.add( source );
@@ -239,7 +272,7 @@ public class CRISValidator {
 	 * @throws IOException on a problem accessing the schema
 	 * @throws ParserConfigurationException
 	 */
-	protected static synchronized Schema getParserSchema() throws SAXException, IOException, ParserConfigurationException {
+	protected synchronized Schema getParserSchema() throws SAXException, IOException, ParserConfigurationException {
 		if ( parserSchema == null ) {
 			parserSchema = getSchema(
 				schema( "/cached/xml.xsd", "http://www.w3.org/2001/xml.xsd" ),
@@ -262,7 +295,7 @@ public class CRISValidator {
 	 * @return the compound schema
 	 * @throws SAXException when problem reading the schema
 	 */
-	protected static synchronized Schema getValidatorSchema() {
+	protected synchronized Schema getValidatorSchema() {
 		if ( validatorSchema == null ) {
 			try {
 				validatorSchema = getSchema(
@@ -304,11 +337,11 @@ public class CRISValidator {
 	}
 
 	@SuppressWarnings( "unused" )
-	private static Optional<String> sampleIdentifier = Optional.empty();
+	private Optional<String> sampleIdentifier = Optional.empty();
 
-	private static Optional<String> serviceAcronym = Optional.empty();
+	private Optional<String> serviceAcronym = Optional.empty();
 
-	private static Element serviceDescription = null;
+	private Element serviceDescription = null;
 
 	/**
 	 * Ask for ?verb=Identity and test it for consistence – checks (1).
