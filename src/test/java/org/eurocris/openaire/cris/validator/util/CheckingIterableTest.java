@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
 import org.junit.Test;
 
 /**
@@ -45,7 +46,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find an entry in an empty collection.
 	 */
-	@Test( expected = MyException.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testEmptyFind() {
 		final List<String> list = Collections.emptyList();
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -67,7 +68,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find one word in a singleton list containing a different word.
 	 */
-	@Test( expected = MyException.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testSingletonFindNo() {
 		final List<String> list = Collections.singletonList( "hello" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -100,7 +101,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find a word that is not contained in a two-words list.
 	 */
-	@Test( expected = MyException.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testTwoEntriesFindNone() {
 		final List<String> list = Arrays.asList( "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -123,7 +124,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find a word that is not contained in a three-words list.
 	 */
-	@Test( expected = MyException3.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testThreeEntriesFindTwoButNotThird() {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -136,7 +137,7 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do find all three words from a three-words list.
 	 */
-	@Test( expected = MyException1.class)
+	@Test( expected = ValidationRuleException.class)
 	public void testThreeEntriesFindTwoButNotThirdReordered() {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -160,12 +161,14 @@ public class CheckingIterableTest {
 	/**
 	 * Test that three entries, two of which are a duplicate, are recognized as a non-unique list.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test
 	public void testThreeEntriesUniqueFind() {
 		final List<String> list = Arrays.asList( "hello", "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
+		assert c0.getResults().getErrors().isEmpty();
+		assert !c1.getResults().getErrors().isEmpty();
 	}
 	
 	/**
@@ -182,12 +185,14 @@ public class CheckingIterableTest {
 	/**
 	 * Test that the uniqueness check disregards nulls, non-unique values listed.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test
 	public void testThreeEntriesUniqueFindDisregardsNulls() {
 		final List<String> list = Arrays.asList( "hello", null, null, "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
+		assert c0.getResults().getErrors().isEmpty();
+		assert !c1.getResults().getErrors().isEmpty();
 	}
 	
 	/**
@@ -204,12 +209,14 @@ public class CheckingIterableTest {
 	/**
 	 * Test that {@link CheckingIterable#checkForAllEquals(Function, Function, String)} works: the case of non-equality.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test
 	public void testForAllEqualsFail() {
 		final List<String> list = Collections.singletonList( "BeautiFul" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, "Entries should be lowercased" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
+		assert c0.getResults().getErrors().isEmpty();
+		assert !c1.getResults().getErrors().isEmpty();
 	}
 	
 	/**

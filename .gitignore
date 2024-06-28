@@ -108,3 +108,7 @@ ENV/
 /data*
 /nohup*
 *~
+
+# Intellij files
+*.iml
+.idea/

@@ -10,6 +10,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import junit.framework.AssertionFailedError;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.model.ValidationError;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An {@link Iterable} collection that will check certain facts either upon returning every object or after all objects have been iterated.
@@ -20,6 +24,9 @@ import junit.framework.AssertionFailedError;
  */
 public abstract class CheckingIterable<T> implements Iterable<T> {
 
+	private static final Logger logger = LoggerFactory.getLogger(CheckingIterable.class);
+	protected RuleResults results = new RuleResults();
+
 	/**
 	 * Iterate through the elements and call {@link #close()} at the end.
 	 * @return the number of elements iterated
@@ -28,9 +35,16 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 		long n = 0;
 		final Iterator<T> it = iterator();
 		while ( it.hasNext() ) {
-			it.next();
+			try {
+				it.next();
+			} catch (Throwable e) {
+				logger.error(e.getMessage(), e);
+				results.incrFailed();
+				results.addError(new ValidationError(e.getMessage(), e));
+			}
 			++n;
 		}
+		results.setCount(n);
 		close();
 		return n;
 	}
@@ -39,6 +53,14 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * Extend here to place the checks to do after all the elements of the collection have been visited.
 	 */
 	protected abstract void close();
+
+	/**
+	 * Retrieve validation results.
+	 * @return
+	 */
+	public RuleResults getResults() {
+		return results;
+	}
 
 	/**
 	 * A simple CheckingIterable that in fact doesn't check anything yet.
@@ -58,7 +80,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 			protected void close() {
 				// no-op
 			}
-			
+
 		};
 	}
 	
@@ -109,7 +131,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	public CheckingIterable<T> checkContains( final Predicate<T> predicate, final String message ) {
 		return checkContains( predicate, new AssertionFailedError( message ) );
 	}
-	
+
 	/**
 	 * Build a CheckingIterable which checks that the collection contains at least one element for which the given predicate is true.
 	 * @param predicate the condition to look for
