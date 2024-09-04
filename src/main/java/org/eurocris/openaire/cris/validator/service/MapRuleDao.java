@@ -3,52 +3,34 @@ package org.eurocris.openaire.cris.validator.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.model.Rule;
-import org.eurocris.openaire.cris.validator.util.PropertiesUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 
 @Service
+@PropertySource("cris.properties")
 public class MapRuleDao implements RuleDao {
 
     private static final Logger logger = LogManager.getLogger(MapRuleDao.class);
-    private Map<String, Rule> rules = new LinkedHashMap<>();
+    private final Map<String, Rule> rules = new LinkedHashMap<>();
 
-    //TODO: enable when supported by dependent projects
-//    @Value("#{${rule.weights}}")
-//    private Map<String, Float> ruleWeights;
-//
-//    @Value("#{${rule.names}}")
-//    private Map<String, String> ruleNames;
-//
-//    @Value("#{${rule.descriptions}}")
-//    private Map<String, String> ruleDescriptions;
-
-    public MapRuleDao() {
+    @Autowired
+    public MapRuleDao(@Value("#{${rule.weights}}") Map<String, Float> ruleWeights,
+                      @Value("#{${rule.names}}") Map<String, String> ruleNames,
+                      @Value("#{${rule.types}}") Map<String, String> ruleTypes,
+                      @Value("#{${rule.descriptions}}") Map<String, String> ruleDescriptions) {
         int i = -1;
-        Map<String, Float> weights = PropertiesUtils.getRuleWeights("/cris.properties");
-        Map<String, String> names = PropertiesUtils.getRuleProperties("/cris.properties", "rule.names");
-        Map<String, String> types = PropertiesUtils.getRuleProperties("/cris.properties", "rule.types");
-        Map<String, String> descriptions = PropertiesUtils.getRuleProperties("/cris.properties", "rule.descriptions");
-        for (String method : weights.keySet()) {
-            Rule rule = new Rule(i, names.get(method), method, weights.get(method), descriptions.get(method), types.get(method));
+        for (String method : ruleWeights.keySet()) {
+            Rule rule = new Rule(i, ruleNames.get(method), method, ruleWeights.get(method), ruleDescriptions.get(method), ruleTypes.get(method));
             this.rules.put(method, rule);
             i--;
             logger.info("Creating new rule for {}: {}", method, rule);
         }
     }
-
-    //TODO: enable when supported by dependent projects
-//    @PostConstruct
-//    void createRules() {
-//        int i = -1;
-//        for (String method : ruleWeights.keySet()) {
-//            Rule rule = new Rule(i, ruleNames.get(method), method, ruleWeights.get(method), ruleDescriptions.get(method), CRISValidator.methodsMap.get(method));
-//            this.rules.put(method, rule);
-//            i--;
-//            logger.info("Creating new rule for {}: {}", method, rule);
-//        }
-//    }
 
     @Override
     public Optional<Rule> get(String ruleMethodName) {

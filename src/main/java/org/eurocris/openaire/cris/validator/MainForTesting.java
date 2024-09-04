@@ -22,7 +22,7 @@ public class MainForTesting {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         JobDao dao = new MapJobDao();
-        RuleDao ruleDao = new MapRuleDao();
+        RuleDao ruleDao = null;
 
         String[] urls = new String[]{
                 "https://pure.eur.nl/ws/oai",
