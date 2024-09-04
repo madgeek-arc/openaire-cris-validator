@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import org.eurocris.openaire.cris.validator.exception.ValidationRuleException;
 import org.junit.Test;
 
 /**
@@ -17,7 +16,7 @@ public class CheckingIterableTest {
 	 * Just see if it runs on an empty collection.
 	 */
 	@Test
-	public void testEmptyRun() {
+	public void testEmptyRun() throws Throwable {
 		final List<String> list = Collections.emptyList();
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		runChecker( list, c0 );
@@ -27,7 +26,7 @@ public class CheckingIterableTest {
 	 * Just see if it runs on a singleton list.
 	 */
 	@Test
-	public void testSingletonRun() {
+	public void testSingletonRun() throws Throwable {
 		final List<String> list = Collections.singletonList( "hello" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		runChecker( list, c0 );
@@ -37,7 +36,7 @@ public class CheckingIterableTest {
 	 * Just see if it runs on a list of two entries.
 	 */
 	@Test
-	public void testTwoEntriesRun() {
+	public void testTwoEntriesRun() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		runChecker( list, c0 );
@@ -46,8 +45,8 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find an entry in an empty collection.
 	 */
-	@Test( expected = ValidationRuleException.class)
-	public void testEmptyFind() {
+	@Test( expected = MyException.class)
+	public void testEmptyFind() throws Throwable {
 		final List<String> list = Collections.emptyList();
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "goodbye".equals( s ), new MyException1() );
@@ -58,7 +57,7 @@ public class CheckingIterableTest {
 	 * See that we do find the one entry from a singleton list.
 	 */
 	@Test
-	public void testSingletonFindYes() {
+	public void testSingletonFindYes() throws Throwable {
 		final List<String> list = Collections.singletonList( "goodbye" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "goodbye".equals( s ), new MyException1() );
@@ -68,8 +67,8 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find one word in a singleton list containing a different word.
 	 */
-	@Test( expected = ValidationRuleException.class)
-	public void testSingletonFindNo() {
+	@Test( expected = MyException.class)
+	public void testSingletonFindNo() throws Throwable {
 		final List<String> list = Collections.singletonList( "hello" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "goodbye".equals( s ), new MyException1() );
@@ -80,7 +79,7 @@ public class CheckingIterableTest {
 	 * See that we do find the first word from a two-words list.
 	 */
 	@Test
-	public void testTwoEntriesFindFirst() {
+	public void testTwoEntriesFindFirst() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "hello".equals( s ), new MyException1() );
@@ -91,7 +90,7 @@ public class CheckingIterableTest {
 	 * See that we do find the second word from a two-words list.
 	 */
 	@Test
-	public void testTwoEntriesFindSecond() {
+	public void testTwoEntriesFindSecond() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "world".equals( s ), new MyException1() );
@@ -101,8 +100,8 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find a word that is not contained in a two-words list.
 	 */
-	@Test( expected = ValidationRuleException.class)
-	public void testTwoEntriesFindNone() {
+	@Test( expected = MyException.class)
+	public void testTwoEntriesFindNone() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "goodbye".equals( s ), new MyException1() );
@@ -113,7 +112,7 @@ public class CheckingIterableTest {
 	 * See that we do find two words out of a three-words list.
 	 */
 	@Test
-	public void testThreeEntriesFindTwo() {
+	public void testThreeEntriesFindTwo() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "hello".equals( s ), new MyException1() );
@@ -124,8 +123,8 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do not find a word that is not contained in a three-words list.
 	 */
-	@Test( expected = ValidationRuleException.class)
-	public void testThreeEntriesFindTwoButNotThird() {
+	@Test( expected = MyException3.class)
+	public void testThreeEntriesFindTwoButNotThird() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "hello".equals( s ), new MyException1() );
@@ -137,8 +136,8 @@ public class CheckingIterableTest {
 	/**
 	 * See that we do find all three words from a three-words list.
 	 */
-	@Test( expected = ValidationRuleException.class)
-	public void testThreeEntriesFindTwoButNotThirdReordered() {
+	@Test( expected = MyException1.class)
+	public void testThreeEntriesFindTwoButNotThirdReordered() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkContains( ( s ) -> "magical".equals( s ), new MyException1() );
@@ -151,79 +150,73 @@ public class CheckingIterableTest {
 	 * Test that three different entries are recognized as a unique list.
 	 */
 	@Test
-	public void testThreeEntriesUniqueOk() {
+	public void testThreeEntriesUniqueOk() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
 	}
-	
+
 	/**
 	 * Test that three entries, two of which are a duplicate, are recognized as a non-unique list.
 	 */
-	@Test
-	public void testThreeEntriesUniqueFind() {
+	@Test( expected = AssertionError.class)
+	public void testThreeEntriesUniqueFind() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
 		runChecker( list, c1 );
-		assert c0.getResults().getErrors().isEmpty();
-		assert !c1.getResults().getErrors().isEmpty();
 	}
-	
+
 	/**
 	 * Test that the uniqueness check disregards nulls, unique values listed.
 	 */
 	@Test
-	public void testThreeEntriesUniqueOkDisregardsNulls() {
+	public void testThreeEntriesUniqueOkDisregardsNulls() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", null, null, "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
 	}
-	
+
 	/**
 	 * Test that the uniqueness check disregards nulls, non-unique values listed.
 	 */
-	@Test
-	public void testThreeEntriesUniqueFindDisregardsNulls() {
+	@Test( expected = AssertionError.class)
+	public void testThreeEntriesUniqueFindDisregardsNulls() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", null, null, "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
 		runChecker( list, c1 );
-		assert c0.getResults().getErrors().isEmpty();
-		assert !c1.getResults().getErrors().isEmpty();
 	}
-	
+
 	/**
 	 * Test that {@link CheckingIterable#checkForAllEquals(Function, Function, String)} works: the case of equality.
 	 */
 	@Test
-	public void testForAllEqualsOk() {
+	public void testForAllEqualsOk() throws Throwable {
 		final List<String> list = Collections.singletonList( "beautiful" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, "Entries should be lowercased" );
-		runChecker( list, c1 );		
+		runChecker( list, c1 );
 	}
 
 	/**
 	 * Test that {@link CheckingIterable#checkForAllEquals(Function, Function, String)} works: the case of non-equality.
 	 */
-	@Test
-	public void testForAllEqualsFail() {
+	@Test( expected = AssertionError.class)
+	public void testForAllEqualsFail() throws Throwable {
 		final List<String> list = Collections.singletonList( "BeautiFul" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, "Entries should be lowercased" );
 		runChecker( list, c1 );
-		assert c0.getResults().getErrors().isEmpty();
-		assert !c1.getResults().getErrors().isEmpty();
 	}
-	
+
 	/**
 	 * Test that {@link CheckingIterable#map(Function)} works: convert to uppercase.
 	 */
 	@Test
-	public void testMapOk() {
+	public void testMapOk() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.map( String::toUpperCase );
@@ -236,11 +229,14 @@ public class CheckingIterableTest {
 	 * @param list the list the checker was constructed from
 	 * @param c1 the checker to exercise
 	 */
-	protected void runChecker( final List<String> list, final CheckingIterable<String> c1 ) {
+	protected void runChecker( final List<String> list, final CheckingIterable<String> c1 ) throws Throwable {
 		final long expected = list.size();
 		final long actual = c1.run();
 		if ( expected != actual ) {
 			throw new IllegalStateException( "Checker run saw " + actual + " entries, but " + expected + " were expected" );
+		}
+		if (!c1.getResults().getErrors().isEmpty()) {
+			throw c1.getResults().getErrors().get(0).getThrowable();
 		}
 	}
 	

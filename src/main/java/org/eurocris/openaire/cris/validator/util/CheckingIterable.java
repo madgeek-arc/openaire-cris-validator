@@ -11,7 +11,6 @@ import java.util.function.Predicate;
 
 import junit.framework.AssertionFailedError;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
-import org.eurocris.openaire.cris.validator.model.ValidationError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +37,20 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 			try {
 				it.next();
 			} catch (Throwable e) {
-				logger.error(e.getMessage(), e);
+				logger.debug(e.getMessage(), e);
 				results.incrFailed();
-				results.addError(new ValidationError(e.getMessage(), e));
+				results.addError(e);
 			}
 			++n;
 		}
 		results.setCount(n);
-		close();
+		try {
+			close();
+		} catch (Throwable e) {
+			logger.debug(e.getMessage(), e);
+			results.incrFailed();
+			results.addError(e);
+		}
 		return n;
 	}
 

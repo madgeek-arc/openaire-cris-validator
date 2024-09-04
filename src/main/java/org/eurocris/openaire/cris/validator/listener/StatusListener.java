@@ -1,18 +1,18 @@
 package org.eurocris.openaire.cris.validator.listener;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.model.Job;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
 import org.eurocris.openaire.cris.validator.service.JobDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
 
 public class StatusListener implements TaskListener {
 
-    private static final Logger logger = LogManager.getLogger(StatusListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(StatusListener.class);
     private Job job;
     private JobDao dao;
 

@@ -37,7 +37,7 @@ public class CRISValidatorTask implements Runnable {
                 listener.finished(results);
             }
         } catch (Exception e) {
-            logger.error("ERROR", e);
+            logger.error(e.getMessage(), e);
             Arrays.stream(listeners).forEach(l -> l.failed(null));
         }
         if (results != null && !results.isEmpty()) {

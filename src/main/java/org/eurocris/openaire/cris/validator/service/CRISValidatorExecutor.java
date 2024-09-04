@@ -23,7 +23,6 @@ public class CRISValidatorExecutor implements JobExecutor {
     private final RuleDao ruleDao;
 
 
-    @Autowired
     public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, JobDao jobDao, RuleDao ruleDao) {
         executor = Executors.newFixedThreadPool(threadNum);
         this.jobDao = jobDao;

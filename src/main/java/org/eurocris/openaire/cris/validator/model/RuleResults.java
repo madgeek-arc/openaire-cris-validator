@@ -8,6 +8,8 @@ import java.util.Objects;
 
 public class RuleResults {
 
+    private static final int NUM_ERRORS = 50;
+
     private Rule rule;
     private long count = 0;
     private long failed = 0;
@@ -43,8 +45,14 @@ public class RuleResults {
     }
 
     public void addError(ValidationError error) {
-        if (this.errors.size() < 20) { // save only the first 20 errors
+        if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(error);
+        }
+    }
+
+    public void addError(Throwable throwable) {
+        if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
+            this.errors.add(new ValidationError(throwable.getMessage(), null, throwable));
         }
     }
 
@@ -92,5 +100,14 @@ public class RuleResults {
             }
         }
         return errorMessages;
+    }
+
+    public boolean hasErrorMessage(String message) {
+        for (ValidationError error : errors) {
+            if (error.getMessage().equals(message)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

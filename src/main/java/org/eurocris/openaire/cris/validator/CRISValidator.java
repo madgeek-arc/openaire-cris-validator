@@ -1,12 +1,37 @@
 package org.eurocris.openaire.cris.validator;
 
-import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.apache.commons.cli.MissingArgumentException;
+import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
+import org.eurocris.openaire.cris.validator.model.Rule;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.model.ValidationError;
+import org.eurocris.openaire.cris.validator.tree.CERIFNode;
+import org.eurocris.openaire.cris.validator.util.CheckingIterable;
+import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
+import org.eurocris.openaire.cris.validator.util.XmlUtils;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
+import org.openarchives.oai._2.*;
+import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
+import javax.xml.bind.JAXBElement;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -26,46 +51,8 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.bind.JAXBElement;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Source;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
-
-import org.apache.commons.cli.MissingArgumentException;
-import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
-import org.eurocris.openaire.cris.validator.model.Rule;
-import org.eurocris.openaire.cris.validator.model.RuleResults;
-import org.eurocris.openaire.cris.validator.model.ValidationError;
-import org.eurocris.openaire.cris.validator.tree.CERIFNode;
-import org.eurocris.openaire.cris.validator.util.CheckingIterable;
-import org.eurocris.openaire.cris.validator.util.FileSavingInputStream;
-import org.eurocris.openaire.cris.validator.util.XmlUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runners.MethodSorters;
-import org.openarchives.oai._2.DescriptionType;
-import org.openarchives.oai._2.HeaderType;
-import org.openarchives.oai._2.IdentifyType;
-import org.openarchives.oai._2.MetadataFormatType;
-import org.openarchives.oai._2.MetadataType;
-import org.openarchives.oai._2.RecordType;
-import org.openarchives.oai._2.SetType;
-import org.openarchives.oai._2.StatusType;
-import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
+import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
+import static org.junit.Assert.*;
 
 /**
  * Validating a given OAI-PMH endpoint for compliance with the OpenAIRE Guidelines for CRIS Managers 1.1 or higher.
@@ -427,10 +414,13 @@ public class CRISValidator {
 		checker = wrapCheckMetadataFormatPresent( checker, results );
 		checker = checker.map( (MetadataFormatType mft) -> {
 			final String prefix = mft.getMetadataPrefix();
-			if ( !prefix.startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX) ) {
-				results.addError(new ValidationError("The metadata NS for prefix " + prefix + " does not start with " + OPENAIRE_CERIF_XMLNS_PREFIX + " (2b)" ));
+			if ( prefix.startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX) ) {
+				metadataFormatsByPrefix.put( prefix, mft );
+//				assertTrue( "The metadata NS for prefix " + prefix + " does not start with " + OPENAIRE_CERIF_XMLNS_PREFIX + " (2b)", mft.getMetadataNamespace().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX) );
+				if (!mft.getMetadataNamespace().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX)) {
+					results.addError(new ValidationError("The metadata NS for prefix " + prefix + " does not start with " + OPENAIRE_CERIF_XMLNS_PREFIX + " (2b)"));
+				}
 			}
-			metadataFormatsByPrefix.put( prefix, mft );
 			return mft;
 		} );
 		final long nMetadataFormats = checker.run();
@@ -448,25 +438,36 @@ public class CRISValidator {
 				final String metadataNs = mf.getMetadataNamespace();
 				if ( !mf.getMetadataPrefix().startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX) ) {
 					results.addError(new ValidationError("The metadata prefix for XML namespace " + metadataNs + " does not start with " + OAI_CERIF_OPENAIRE__METADATA_PREFIX + " (2c)"));
-				}
-				try {
-					final DocumentBuilder db = getDocumentBuilderFactory().newDocumentBuilder();
-					final String schemaUrl = mf.getSchema();
-					System.out.println( "Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace() );
-					assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) );
-					assertTrue( "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)", schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) );
-					final String localSchemaUrl = schemaUrlsByNs.get( metadataNs );
-					assertNotNull( "This validator does not cover the metadata namespace " + metadataNs + " (2g)", localSchemaUrl );
-					if ( !localSchemaUrl.contains( "/current/" ) ) {
-						final Document doc = db.parse( localSchemaUrl );
-						final Element schemaRootEl = doc.getDocumentElement();
-						final String targetNsUri = schemaRootEl.getAttribute( "targetNamespace" );
-						assertEquals( "The schema does not have the advertised target namespace URI (2j)", metadataNs, targetNsUri );
+					return false;
+				} else {
+					try {
+						final DocumentBuilder db = getDocumentBuilderFactory().newDocumentBuilder();
+						final String schemaUrl = mf.getSchema();
+						logger.info("Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace());
+						if (!schemaUrl.startsWith(OPENAIRE_CERIF_SCHEMAS_ROOT)) {
+							results.addError(new ValidationError("Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)"));
+						}
+						if (!schemaUrl.endsWith("/" + OPENAIRE_CERIF_SCHEMA_FILENAME)) {
+							results.addError(new ValidationError("The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)"));
+						}
+						final String localSchemaUrl = schemaUrlsByNs.get(metadataNs);
+						if (localSchemaUrl == null) {
+							results.addError(new ValidationError("This validator does not cover the metadata namespace " + metadataNs + " (2g)"));
+						} else {
+							if (!localSchemaUrl.contains("/current/")) {
+								final Document doc = db.parse(localSchemaUrl);
+								final Element schemaRootEl = doc.getDocumentElement();
+								final String targetNsUri = schemaRootEl.getAttribute("targetNamespace");
+								if (!Objects.equals(metadataNs, targetNsUri)) {
+									results.addError(new ValidationError("The schema does not have the advertised target namespace URI (2j)"));
+								}
+							}
+						}
+						return true;
+					} catch (final ParserConfigurationException | SAXException | IOException e) {
+						throw new IllegalStateException(e);
 					}
-				} catch ( final ParserConfigurationException | SAXException | IOException e ) {
-					throw new IllegalStateException( e );
 				}
-				return true;
 			}
 
 		};
@@ -741,7 +742,7 @@ public class CRISValidator {
 					lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency( node3, oaiIdentifier );
 				} catch (Throwable e) {
 					ruleResults.incrFailed();
-					ruleResults.addError(new ValidationError(e.getMessage(), node3));
+					ruleResults.addError(new ValidationError(e.getMessage(), node3, e));
 				}
 			}
 		}
