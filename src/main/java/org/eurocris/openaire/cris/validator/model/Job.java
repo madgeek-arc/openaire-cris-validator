@@ -172,4 +172,9 @@ public class Job {
     public void setRuleResults(List<RuleResults> ruleResults) {
         this.ruleResults = ruleResults;
     }
+
+    public String getReport() {
+        return String.format("%nJob [%s]%nurl:\t\t\t%s%nuser:\t\t\t%s%nstatus:\t\t\t%s%nusage score:\t\t%s%ncontent score:\t\t%s%ndate submitted:\t%s%ndate started:\t%s%ndate finished:\t%s%n%n%n",
+                        this.getId(), this.getUrl(), this.getUser(), this.getStatus(), this.getUsageScore(), this.getContentScore(), this.getDateSubmitted(), this.getDateStarted(), this.getDateFinished());
+    }
 }
