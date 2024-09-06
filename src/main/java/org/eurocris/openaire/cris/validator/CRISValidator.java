@@ -36,13 +36,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -68,6 +69,7 @@ import static org.junit.Assert.*;
 public class CRISValidator {
 
     private static final Logger logger = LoggerFactory.getLogger(CRISValidator.class);
+    private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
 
     /**
      * The spec of the set of equipments.
@@ -157,6 +159,11 @@ public class CRISValidator {
 
     private OAIPMHEndpoint endpoint;
 
+
+    private static String getFormatedDateAsString() {
+        return DATE_FORMATTER.format(new Date());
+    }
+
     /**
      * Set up the test suite.
      *
@@ -199,18 +206,21 @@ public class CRISValidator {
      * Set up a CRIS Validation for the URL {@param endpointUrl}.
      * The parameter {@param id} must be unique among simultaneous validations.
      *
-     * @param endpointUrl
-     * @param id
-     * @throws MalformedURLException
+     * @param endpointUrl the endpoint to perform the validation.
+     * @param id          the id of the validation.
+     * @param rules       a map of rule names and {@link Rule rules}
+     * @throws IOException
      * @throws SAXException
+     * @throws ParserConfigurationException
      */
     public CRISValidator(String endpointUrl, String id, Map<String, Rule> rules) throws IOException, SAXException, ParserConfigurationException {
         this.rules = rules;
-        endpoint = new OAIPMHEndpoint(URI.create(endpointUrl).toURL(), getParserSchema(), new FileLoggingConnectionStreamFactory("data/" + id));
+        String logDir = String.format("data/%s/%s_%s", getFormatedDateAsString(), id, endpointUrl);
+        endpoint = new OAIPMHEndpoint(URI.create(endpointUrl).toURL(), getParserSchema(), new FileLoggingConnectionStreamFactory(logDir));
     }
 
     /**
-     * Invokes the validation method named {@param methodName}.
+     * Invokes the validation method passed as argument.
      *
      * @param method
      * @return
@@ -258,7 +268,9 @@ public class CRISValidator {
      * @param methodResults the list of method {@link RuleResults results}.
      */
     public void runTests(final List<RuleResults> methodResults) {
-        runTests(methodResults, () -> {return null;});
+        runTests(methodResults, () -> {
+            return null;
+        });
     }
 
     /**
@@ -314,7 +326,7 @@ public class CRISValidator {
      * Create the schema for the second-phase validation.
      *
      * @return the compound schema
-     * @throws SAXException when problem reading the schema
+     * @throws IllegalStateException when problem reading the schema
      */
     protected synchronized Schema getValidatorSchema() {
         if (validatorSchema == null) {
