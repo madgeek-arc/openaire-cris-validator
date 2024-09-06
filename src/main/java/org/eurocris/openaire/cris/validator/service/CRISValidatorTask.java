@@ -14,10 +14,10 @@ import java.util.List;
 public class CRISValidatorTask implements Runnable {
 
     private static final Logger logger = LogManager.getLogger(CRISValidatorTask.class);
-    private Job job;
-    private JobDao jobDao;
-    private RuleDao ruleDao;
-    private TaskListener[] listeners;
+    private final Job job;
+    private final JobDao jobDao;
+    private final RuleDao ruleDao;
+    private final TaskListener[] listeners;
 
     public CRISValidatorTask(Job job, JobDao jobDao, RuleDao ruleDao, TaskListener... listeners) {
         this.job = job;
@@ -33,9 +33,7 @@ public class CRISValidatorTask implements Runnable {
         try {
             CRISValidator object = new CRISValidator(job.getUrl(), String.valueOf(job.getId()), ruleDao.getRuleMap());
             object.runTests(results, () -> {Arrays.stream(listeners).forEach(s -> s.updated(results)); return null;} );
-            for (TaskListener listener : listeners) {
-                listener.finished(results);
-            }
+            Arrays.stream(listeners).forEach(s -> s.finished(results));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             Arrays.stream(listeners).forEach(l -> l.failed(results));
