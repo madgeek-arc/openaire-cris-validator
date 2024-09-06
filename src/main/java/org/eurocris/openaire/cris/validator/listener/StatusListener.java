@@ -23,17 +23,35 @@ public class StatusListener implements TaskListener {
     }
 
     @Override
-    public void started() {
+    public void started(final List<RuleResults> results) {
         job.setUsageJobStatus(Job.Status.ONGOING.getKey());
         job.setContentJobStatus(Job.Status.ONGOING.getKey());
         job.setStatus(Job.Status.ONGOING.getKey());
         job.setDateStarted(new Date());
+        job.setRuleResults(results);
         dao.save(job);
         logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
     }
 
     @Override
-    public void finished(List<RuleResults> results) {
+    public void updated(final List<RuleResults> results) {
+        if (results.size() == 3) {
+            job.setUsageJobStatus(Job.Status.FINISHED.getKey());
+            int usageScore = createScore(results, CRISValidator.USAGE);
+            job.setUsageScore(usageScore);
+            if (usageScore <= 50) {
+                job.setUsageJobStatus(Job.Status.FAILED.getKey());
+            }
+        }
+        job.setRecordsTested(recordsTested(results));
+        job.setContentScore(createScore(results, CRISValidator.CONTENT));
+        job.setRuleResults(results);
+        dao.save(job);
+        logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
+    }
+
+    @Override
+    public void finished(final List<RuleResults> results) {
         job.setUsageJobStatus(Job.Status.FINISHED.getKey());
         job.setContentJobStatus(Job.Status.FINISHED.getKey());
         job.setStatus(Job.Status.SUCCESSFUL.getKey());
@@ -50,14 +68,15 @@ public class StatusListener implements TaskListener {
     }
 
     @Override
-    public void failed(List<RuleResults> errors) {
+    public void failed(final List<RuleResults> results) {
         job.setUsageJobStatus(Job.Status.FAILED.getKey());
         job.setContentJobStatus(Job.Status.FAILED.getKey());
         job.setStatus(Job.Status.FAILED.getKey());
-        job.setRuleResults(errors);
-        job.setRecordsTested(recordsTested(errors));
-        job.setUsageScore(0);
-        job.setContentScore(0);
+        job.setDateFinished(new Date());
+        job.setRuleResults(results);
+        job.setRecordsTested(recordsTested(results));
+        job.setUsageScore(createScore(results, CRISValidator.USAGE));
+        job.setContentScore(createScore(results, CRISValidator.CONTENT));
         dao.save(job);
         logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
     }

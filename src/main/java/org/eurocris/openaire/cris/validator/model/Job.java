@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 public class Job {
 
-    private String id;
+    private int id;
     private String url;
     private String user;
     private String status;
@@ -55,7 +55,7 @@ public class Job {
     }
 
     public Job() {
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().hashCode();
         this.status = "pending";
         this.dateSubmitted = new Date();
     }
@@ -64,16 +64,16 @@ public class Job {
         this.url = url;
         this.user = user;
 
-        this.id = UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().hashCode();
         this.status = "pending";
         this.dateSubmitted = new Date();
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 

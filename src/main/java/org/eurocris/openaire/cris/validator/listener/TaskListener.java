@@ -8,21 +8,30 @@ public interface TaskListener {
 
     /**
      * Task started.
+     *
+     * @param results
      */
-    void started();
+    void started(final List<RuleResults> results);
+
+    /**
+     * Task updated.
+     *
+     * @param results
+     */
+    void updated(final List<RuleResults> results);
 
     /**
      * Task finished. Handle results {@param results}.
      *
      * @param results
      */
-    void finished(List<RuleResults> results);
+    void finished(final List<RuleResults> results);
 
     /**
      * Task failed. Handle errors {@param errors}.
      *
-     * @param errors
+     * @param results
      */
-    void failed(List<RuleResults> errors);
+    void failed(final List<RuleResults> results);
 
 }

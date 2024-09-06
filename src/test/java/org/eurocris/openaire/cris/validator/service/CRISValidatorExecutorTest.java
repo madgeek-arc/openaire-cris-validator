@@ -47,7 +47,7 @@ public class CRISValidatorExecutorTest {
     @Test
     public void testJobId() {
         Job myJob = new Job(URI.create("").toString(), "test");
-        assert myJob.getId() != null;
+        assert myJob.getId() != 0;
     }
 
     @Test

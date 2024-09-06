@@ -28,17 +28,17 @@ public class CRISValidatorTask implements Runnable {
 
     @Override
     public void run() {
-        List<RuleResults> results = new LinkedList<>();
-        Arrays.stream(listeners).forEach(TaskListener::started);
+        final List<RuleResults> results = new LinkedList<>();
+        Arrays.stream(listeners).forEach(s -> s.started(results));
         try {
-            CRISValidator object = new CRISValidator(job.getUrl(), job.getId(), ruleDao.getRuleMap());
-            results = object.runTests();
+            CRISValidator object = new CRISValidator(job.getUrl(), String.valueOf(job.getId()), ruleDao.getRuleMap());
+            object.runTests(results, () -> {Arrays.stream(listeners).forEach(s -> s.updated(results)); return null;} );
             for (TaskListener listener : listeners) {
                 listener.finished(results);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            Arrays.stream(listeners).forEach(l -> l.failed(null));
+            Arrays.stream(listeners).forEach(l -> l.failed(results));
         }
         if (results != null && !results.isEmpty()) {
             for (RuleResults result : results) {

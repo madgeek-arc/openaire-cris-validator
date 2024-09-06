@@ -89,7 +89,7 @@ public class MapJobDao implements JobDao {
 
     @Override
     public void save(Job t) {
-        jobs.put(t.getId(), t);
+        jobs.put(String.valueOf(t.getId()), t);
     }
 
     @Override

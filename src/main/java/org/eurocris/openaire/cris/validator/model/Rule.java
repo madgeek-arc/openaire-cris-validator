@@ -20,7 +20,7 @@ public class Rule {
         this.ruleMethodName = ruleMethodName;
         this.weight = weight;
         this.description = description;
-        this.type = type;
+        this.type = type.toLowerCase();
     }
 
     @Override
@@ -92,6 +92,6 @@ public class Rule {
     }
 
     public void setType(String type) {
-        this.type = type;
+        this.type = type.toLowerCase();
     }
 }
