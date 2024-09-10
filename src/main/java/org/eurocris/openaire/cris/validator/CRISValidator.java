@@ -383,7 +383,6 @@ public class CRISValidator {
      */
     @Test
     public RuleResults check000_Identify() throws Exception {
-        RuleResults results = new RuleResults();
         final IdentifyType identify = endpoint.callIdentify();
         CheckingIterable<DescriptionType> checker = CheckingIterable.over(identify.getDescription());
         checker = checker.checkContainsOne(new Predicate<DescriptionType>() {
@@ -423,21 +422,14 @@ public class CRISValidator {
 
         }, "the Identify descriptions list (1a)", "a 'Service' element");
         checker.run();
-        if (!endpoint.getBaseUrl().startsWith("file:")) {
-            if (!endpoint.getBaseUrl().equals(identify.getBaseURL())) {
-//				assertEquals("Identify response has a different endpoint base URL (1d)", endpoint.getBaseUrl(), identify.getBaseURL());
-                results.addError(new ValidationError("Identify response has a different endpoint base URL (1d)"));
-            }
+        if ( ! endpoint.getBaseUrl().startsWith( "file:" ) ) {
+            assertEquals( "Identify response has a different endpoint base URL (1d)", endpoint.getBaseUrl(), identify.getBaseURL() );
         }
         final Optional<String> repoIdentifier = endpoint.getRepositoryIdentifer();
-        if (serviceAcronym.isPresent() && repoIdentifier.isPresent()) {
-            if (!serviceAcronym.get().equals(repoIdentifier.get())) {
-//				assertEquals("Service acronym is not the same as the repository identifier (1c)", serviceAcronym.get(), repoIdentifier.get());
-                results.addError(new ValidationError("Service acronym is not the same as the repository identifier (1c)"));
-            }
+        if ( serviceAcronym.isPresent() && repoIdentifier.isPresent() ) {
+            assertEquals( "Service acronym is not the same as the repository identifier (1c)", serviceAcronym.get(), repoIdentifier.get() );
         }
-        results.add(checker.getResults());
-        return results;
+        return checker.getResults();
     }
 
     /**
@@ -456,12 +448,9 @@ public class CRISValidator {
         checker = wrapCheckMetadataFormatPresent(checker, results);
         checker = checker.map((MetadataFormatType mft) -> {
             final String prefix = mft.getMetadataPrefix();
-            if (prefix.startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX)) {
-                metadataFormatsByPrefix.put(prefix, mft);
-//				assertTrue( "The metadata NS for prefix " + prefix + " does not start with " + OPENAIRE_CERIF_XMLNS_PREFIX + " (2b)", mft.getMetadataNamespace().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX) );
-                if (!mft.getMetadataNamespace().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX)) {
-                    results.addError(new ValidationError("The metadata NS for prefix " + prefix + " does not start with " + OPENAIRE_CERIF_XMLNS_PREFIX + " (2b)"));
-                }
+            if ( prefix.startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX) ) {
+                metadataFormatsByPrefix.put( prefix, mft );
+                assertTrue( "The metadata NS for prefix " + prefix + " does not start with " + OPENAIRE_CERIF_XMLNS_PREFIX + " (2b)", mft.getMetadataNamespace().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX) );
             }
             return mft;
         });
@@ -486,29 +475,20 @@ public class CRISValidator {
                         final DocumentBuilder db = getDocumentBuilderFactory().newDocumentBuilder();
                         final String schemaUrl = mf.getSchema();
                         logger.info("Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace());
-                        if (!schemaUrl.startsWith(OPENAIRE_CERIF_SCHEMAS_ROOT)) {
-                            results.addError(new ValidationError("Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)"));
+                        assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) );
+                        assertTrue( "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)", schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) );
+                        final String localSchemaUrl = schemaUrlsByNs.get( metadataNs );
+                        assertNotNull( "This validator does not cover the metadata namespace " + metadataNs + " (2g)", localSchemaUrl );
+                        if ( !localSchemaUrl.contains( "/current/" ) ) {
+                            final Document doc = db.parse( localSchemaUrl );
+                            final Element schemaRootEl = doc.getDocumentElement();
+                            final String targetNsUri = schemaRootEl.getAttribute( "targetNamespace" );
+                            assertEquals( "The schema does not have the advertised target namespace URI (2j)", metadataNs, targetNsUri );
                         }
-                        if (!schemaUrl.endsWith("/" + OPENAIRE_CERIF_SCHEMA_FILENAME)) {
-                            results.addError(new ValidationError("The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)"));
-                        }
-                        final String localSchemaUrl = schemaUrlsByNs.get(metadataNs);
-                        if (localSchemaUrl == null) {
-                            results.addError(new ValidationError("This validator does not cover the metadata namespace " + metadataNs + " (2g)"));
-                        } else {
-                            if (!localSchemaUrl.contains("/current/")) {
-                                final Document doc = db.parse(localSchemaUrl);
-                                final Element schemaRootEl = doc.getDocumentElement();
-                                final String targetNsUri = schemaRootEl.getAttribute("targetNamespace");
-                                if (!Objects.equals(metadataNs, targetNsUri)) {
-                                    results.addError(new ValidationError("The schema does not have the advertised target namespace URI (2j)"));
-                                }
-                            }
-                        }
-                        return true;
-                    } catch (final ParserConfigurationException | SAXException | IOException e) {
-                        throw new IllegalStateException(e);
+                    } catch ( final ParserConfigurationException | SAXException | IOException e ) {
+                        throw new IllegalStateException( e );
                     }
+                    return true;
                 }
             }
 
@@ -557,29 +537,27 @@ public class CRISValidator {
         RuleResults results = new RuleResults();
         CheckingIterable<SetType> checker = CheckingIterable.over(endpoint.callListSets());
         checker = checker.checkUnique(SetType::getSetSpec, "setSpec not unique");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_PUBLICATIONS__SET_SPEC, "OpenAIRE_CRIS_publications");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_PRODUCTS__SET_SPEC, "OpenAIRE_CRIS_products");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_PATENTS__SET_SPEC, "OpenAIRE_CRIS_patents");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_PERSONS__SET_SPEC, "OpenAIRE_CRIS_persons");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_ORGUNITS__SET_SPEC, "OpenAIRE_CRIS_orgunits");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_PROJECTS__SET_SPEC, "OpenAIRE_CRIS_projects");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_FUNDING__SET_SPEC, "OpenAIRE_CRIS_funding");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_EVENTS__SET_SPEC, "OpenAIRE_CRIS_events");
-        checker = wrapCheckSetPresent(results, checker, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, "OpenAIRE_CRIS_equipments");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_PUBLICATIONS__SET_SPEC, "OpenAIRE_CRIS_publications");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_PRODUCTS__SET_SPEC, "OpenAIRE_CRIS_products");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_PATENTS__SET_SPEC, "OpenAIRE_CRIS_patents");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_PERSONS__SET_SPEC, "OpenAIRE_CRIS_persons");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_ORGUNITS__SET_SPEC, "OpenAIRE_CRIS_orgunits");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_PROJECTS__SET_SPEC, "OpenAIRE_CRIS_projects");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_FUNDING__SET_SPEC, "OpenAIRE_CRIS_funding");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_EVENTS__SET_SPEC, "OpenAIRE_CRIS_events");
+        checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, "OpenAIRE_CRIS_equipments");
         checker.run();
-        return checker.getResults();
+        results.add(checker.getResults());
+        return results;
     }
 
-    private CheckingIterable<SetType> wrapCheckSetPresent(final RuleResults results, final CheckingIterable<SetType> parent, final String expectedSetSpec, final String expectedSetName) {
+    private CheckingIterable<SetType> wrapCheckSetPresent(final CheckingIterable<SetType> parent, final String expectedSetSpec, final String expectedSetName) {
         final Predicate<SetType> predicate = new Predicate<SetType>() {
 
             @Override
             public boolean test(final SetType s) {
-                if (expectedSetSpec.equals(s.getSetSpec())) {
-                    if (!expectedSetName.equals(s.getSetName())) {
-//						assertEquals("Non-matching set name for set '" + expectedSetSpec + "' (3)", expectedSetName, s.getSetName());
-                        results.addError(new ValidationError("Non-matching set name for set '" + expectedSetSpec + "' (3)"));
-                    }
+                if ( expectedSetSpec.equals( s.getSetSpec() ) ) {
+                    assertEquals( "Non-matching set name for set '" + expectedSetSpec + "' (3)", expectedSetName, s.getSetName() );
                     return true;
                 }
                 return false;
@@ -597,11 +575,7 @@ public class CRISValidator {
      */
     private RuleResults checkSetSpec(String set, String localName) {
         RuleResults results = new RuleResults();
-        if (metadataFormatsByPrefix.isEmpty()) {
-            results.addError(new ValidationError("No metadata prefix to fetch?"));
-            metadataFormatsByPrefix.put(OAI_CERIF_OPENAIRE__METADATA_PREFIX, null);
-        }
-//		assertFalse( "No metadata prefix to fetch?", metadataFormatsByPrefix.isEmpty() );
+		assertFalse( "No metadata prefix to fetch?", metadataFormatsByPrefix.isEmpty() );
         for (final String prefix : metadataFormatsByPrefix.keySet()) {
             final Iterable<RecordType> records = endpoint.callListRecords(prefix, set, null, null);
             final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, localName);
