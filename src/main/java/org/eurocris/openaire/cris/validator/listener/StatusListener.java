@@ -85,7 +85,7 @@ public class StatusListener implements TaskListener {
         float score = 0;
         if (ruleResults != null && !ruleResults.isEmpty()) {
             for (RuleResults rResults : ruleResults) {
-                if (rResults.getRule().getType().equals(type)) {
+                if (rResults.getRule().getType().equalsIgnoreCase(type)) {
                     // rule score: (total - failed) / total
                     float ruleScore = 0;
                     if (rResults.getCount() != 0) {
@@ -102,7 +102,7 @@ public class StatusListener implements TaskListener {
         int records = 0;
         if (results != null && !results.isEmpty()) {
             for (RuleResults ruleResults : results) {
-                if (ruleResults.getRule().getType().equals(CRISValidator.CONTENT)) {
+                if (ruleResults.getRule().getType().equalsIgnoreCase(CRISValidator.CONTENT)) {
                     records += ruleResults.getCount();
                 }
             }
