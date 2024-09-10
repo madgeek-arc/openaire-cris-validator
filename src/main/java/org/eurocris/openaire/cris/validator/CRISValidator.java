@@ -320,7 +320,7 @@ public class CRISValidator {
         return parserSchema;
     }
 
-    private static Schema validatorSchema = null;
+    private Schema validatorSchema = null;
 
     /**
      * Create the schema for the second-phase validation.
@@ -445,7 +445,7 @@ public class CRISValidator {
         checker = checker.checkUnique(MetadataFormatType::getMetadataPrefix, "Metadata prefix not unique (2d)");
         checker = checker.checkUnique(MetadataFormatType::getMetadataNamespace, "Metadata namespace not unique (2e)");
         checker = checker.checkUnique(MetadataFormatType::getSchema, "Metadata schema location not unique (2f)");
-        checker = wrapCheckMetadataFormatPresent(checker, results);
+        checker = wrapCheckMetadataFormatPresent(checker);
         checker = checker.map((MetadataFormatType mft) -> {
             final String prefix = mft.getMetadataPrefix();
             if ( prefix.startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX) ) {
@@ -461,20 +461,18 @@ public class CRISValidator {
         return results;
     }
 
-    private CheckingIterable<MetadataFormatType> wrapCheckMetadataFormatPresent(final CheckingIterable<MetadataFormatType> parent, final RuleResults results) {
+    private CheckingIterable<MetadataFormatType> wrapCheckMetadataFormatPresent( final CheckingIterable<MetadataFormatType> parent ) {
         final Predicate<MetadataFormatType> predicate = new Predicate<MetadataFormatType>() {
 
             @Override
-            public boolean test(final MetadataFormatType mf) {
+            public boolean test( final MetadataFormatType mf ) {
                 final String metadataNs = mf.getMetadataNamespace();
-                if (!mf.getMetadataPrefix().startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX)) {
-                    results.addError(new ValidationError("The metadata prefix for XML namespace " + metadataNs + " does not start with " + OAI_CERIF_OPENAIRE__METADATA_PREFIX + " (2c)"));
-                    return false;
-                } else {
+                if ( metadataNs.startsWith( OPENAIRE_CERIF_XMLNS_PREFIX ) ) {
+                    assertTrue( "The metadata prefix for XML namespace " + metadataNs + " does not start with " + OAI_CERIF_OPENAIRE__METADATA_PREFIX + " (2c)", mf.getMetadataPrefix().startsWith(OAI_CERIF_OPENAIRE__METADATA_PREFIX) );
                     try {
                         final DocumentBuilder db = getDocumentBuilderFactory().newDocumentBuilder();
                         final String schemaUrl = mf.getSchema();
-                        logger.info("Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace());
+                        logger.info( "Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace() );
                         assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) );
                         assertTrue( "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)", schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) );
                         final String localSchemaUrl = schemaUrlsByNs.get( metadataNs );
@@ -490,24 +488,25 @@ public class CRISValidator {
                     }
                     return true;
                 }
+                return false;
             }
 
         };
-        CheckingIterable<MetadataFormatType> checker = parent.checkContains(predicate, new AssertionError("Metadata format for the OpenAIRE Guidelines for CRIS Managers not present (2a)"));
-        if (serviceDescription != null) {
-            for (final Element el : XmlUtils.nodeListToIterableOfElements(serviceDescription.getElementsByTagNameNS(COMPATIBILITY_NSURI, "Compatibility"))) {
+        CheckingIterable<MetadataFormatType> checker = parent.checkContains( predicate, new AssertionError( "Metadata format for the OpenAIRE Guidelines for CRIS Managers not present (2a)" ) );
+        if ( serviceDescription != null ) {
+            for ( final Element el : XmlUtils.nodeListToIterableOfElements( serviceDescription.getElementsByTagNameNS( COMPATIBILITY_NSURI, "Compatibility" ) ) ) {
                 final String compatibilityUri = el.getTextContent();
-                final String compatibilityVersion = compatibilityUri.replaceFirst(".*#", "");
-                if (!"1.0".equals(compatibilityVersion)) { // This validator does not support version 1.0 of the Guidelines
-                    checker = checker.checkContains(new Predicate<MetadataFormatType>() {
+                final String compatibilityVersion = compatibilityUri.replaceFirst( ".*#", "" );
+                if ( !"1.0".equals( compatibilityVersion ) ) { // This validator does not support version 1.0 of the Guidelines
+                    checker = checker.checkContains( new Predicate<MetadataFormatType>() {
 
                         @Override
-                        public boolean test(final MetadataFormatType t) {
-                            final String metadataFormatVersion = t.getMetadataNamespace().replace(OPENAIRE_CERIF_XMLNS_PREFIX, "").replaceFirst("/$", "");
-                            return compatibilityVersion.equals(metadataFormatVersion);
+                        public boolean test( final MetadataFormatType t ) {
+                            final String metadataFormatVersion = t.getMetadataNamespace().replace( OPENAIRE_CERIF_XMLNS_PREFIX, "" ).replaceFirst( "/$", "" );
+                            return compatibilityVersion.equals( metadataFormatVersion );
                         }
 
-                    }, "No metadata format specified for declared compatibility " + compatibilityUri + " (2k)");
+                    }, "No metadata format specified for declared compatibility " + compatibilityUri + " (2k)" );
                 }
             }
         }
