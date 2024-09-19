@@ -235,9 +235,12 @@ public class CRISValidator {
             }
         } catch (AssertionError e) {
             error = new ValidationError(e.getCause().getMessage(), e);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            logger.error(e.getCause().getMessage(), e.getCause());
+        } catch (IllegalAccessException e) {
+            logger.error(e.getMessage(), e.getCause());
             error = new ValidationError(e.getCause().getMessage());
+        } catch (InvocationTargetException e) {
+            logger.error(e.getTargetException().getMessage(), e.getTargetException());
+            error = new ValidationError(e.getTargetException().getMessage());
         }
         return new RuleResults(rules.get(method.getName()), 0, 0, Collections.singletonList(error));
     }
