@@ -143,7 +143,7 @@ public class MetadataFormatTest {
 	}
 
 	/**
-	 * Test that {@link CRISValidator} reports an inofficial XML Schema location.
+	 * Test that {@link CRISValidator} reports an unofficial XML Schema location.
 	 * @see (2h) in CHECKS.md
 	 * @throws Exception in case of some error
 	 */

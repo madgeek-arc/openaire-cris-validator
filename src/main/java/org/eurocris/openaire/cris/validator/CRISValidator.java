@@ -2,6 +2,7 @@ package org.eurocris.openaire.cris.validator;
 
 import org.apache.commons.cli.MissingArgumentException;
 import org.eurocris.openaire.cris.validator.OAIPMHEndpoint.ConnectionStreamFactory;
+import org.eurocris.openaire.cris.validator.exception.RecordValidationException;
 import org.eurocris.openaire.cris.validator.model.Rule;
 import org.eurocris.openaire.cris.validator.model.RuleResults;
 import org.eurocris.openaire.cris.validator.model.ValidationError;
@@ -16,6 +17,7 @@ import org.openarchives.oai._2.*;
 import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.ErrorHandler;
@@ -52,6 +54,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 import static org.junit.Assert.*;
@@ -236,13 +239,12 @@ public class CRISValidator {
         } catch (AssertionError e) {
             error = new ValidationError(e.getCause().getMessage(), e);
         } catch (IllegalAccessException e) {
-            logger.error(e.getMessage(), e.getCause());
-            error = new ValidationError(e.getCause().getMessage());
+            throw new RuntimeException("Error invoking " + method.getName(), e);
         } catch (InvocationTargetException e) {
             logger.error(e.getTargetException().getMessage(), e.getTargetException());
             error = new ValidationError(e.getTargetException().getMessage());
         }
-        return new RuleResults(rules.get(method.getName()), 0, 0, Collections.singletonList(error));
+        return new RuleResults(metadataFormatsByPrefix.keySet(), rules.get(method.getName()), 0, 0, Collections.singletonList(error));
     }
 
     /**
@@ -253,7 +255,7 @@ public class CRISValidator {
      */
     public void runTests(final List<RuleResults> methodResults, Callable<Void> callable) {
         Method[] methods = CRISValidator.class.getDeclaredMethods();
-        for (Method method : methods) {
+        for (Method method : Arrays.stream(methods).sorted(Comparator.comparing(Method::getName)).collect(Collectors.toList())) {
             if (Arrays.stream(method.getDeclaredAnnotations()).anyMatch(a -> a instanceof Test)) {
                 try {
                     methodResults.add(invokeMethod(method));
@@ -281,6 +283,28 @@ public class CRISValidator {
      */
     public String getName() {
         return endpoint.getBaseUrl();
+    }
+
+    /**
+     * Creates the Identifier of the record
+     *
+     * @param setName the record Set type name
+     * @param id the id
+     * @return
+     */
+    private String createIdentifier(String setName, String id) {
+        // Identifier format:  oai:{url}:{set}/{id}
+        if (!StringUtils.hasText(setName)) {
+            setName = ":";
+        } else {
+            // the '/' character is appended to the set to be able to create
+            setName = String.format(":openaire_cris_%ss/", setName.toLowerCase());
+        }
+        if (endpoint != null && endpoint.getRepositoryIdentifer().isPresent()) {
+            return String.format("oai:%s%s%s", endpoint.getRepositoryIdentifer().get(), setName, id);
+        } else {
+            return id;
+        }
     }
 
     private Schema getSchema(final StreamSource... sources) throws IOException, SAXException, ParserConfigurationException {
@@ -416,7 +440,7 @@ public class CRISValidator {
                     if ("Service".equals(el.getLocalName()) && el.getNamespaceURI() != null && el.getNamespaceURI().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX)) {
                         serviceDescription = el;
                         serviceAcronym = XmlUtils.getTextContents(XmlUtils.getFirstMatchingChild(el, "Acronym", el.getNamespaceURI()));
-                        validateMetadataPayload(el);
+                        validateMetadataPayload(el, null);
                         return true;
                     }
                 }
@@ -432,7 +456,7 @@ public class CRISValidator {
         if ( serviceAcronym.isPresent() && repoIdentifier.isPresent() ) {
             assertEquals( "Service acronym is not the same as the repository identifier (1c)", serviceAcronym.get(), repoIdentifier.get() );
         }
-        return checker.getResults();
+        return checker.getResults().setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
     }
 
     /**
@@ -461,7 +485,7 @@ public class CRISValidator {
         final int nOpenAireMetadataFormats = metadataFormatsByPrefix.size();
         logger.info("Having " + nOpenAireMetadataFormats + " OpenAIRE CRIS metadata formats (out of the total " + nMetadataFormats + " metadata formats)");
         results.add(checker.getResults());
-        return results;
+        return results.setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
     }
 
     private CheckingIterable<MetadataFormatType> wrapCheckMetadataFormatPresent( final CheckingIterable<MetadataFormatType> parent ) {
@@ -476,7 +500,8 @@ public class CRISValidator {
                         final DocumentBuilder db = getDocumentBuilderFactory().newDocumentBuilder();
                         final String schemaUrl = mf.getSchema();
                         logger.info( "Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace() );
-                        assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) );
+                        // Added github as source of schema when checking
+                        assertTrue( "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)", schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) || schemaUrl.startsWith( "https://github.com/openaire/guidelines-cris-managers/" ) );
                         assertTrue( "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)", schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) );
                         final String localSchemaUrl = schemaUrlsByNs.get( metadataNs );
                         assertNotNull( "This validator does not cover the metadata namespace " + metadataNs + " (2g)", localSchemaUrl );
@@ -550,7 +575,7 @@ public class CRISValidator {
         checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, "OpenAIRE_CRIS_equipments");
         checker.run();
         results.add(checker.getResults());
-        return results;
+        return results.setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
     }
 
     private CheckingIterable<SetType> wrapCheckSetPresent(final CheckingIterable<SetType> parent, final String expectedSetSpec, final String expectedSetName) {
@@ -582,6 +607,7 @@ public class CRISValidator {
             final Iterable<RecordType> records = endpoint.callListRecords(prefix, set, null, null);
             final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, localName);
             checker.run();
+            results.getMetadataPrefixSet().add(prefix);
             results.add(checker.getResults());
         }
         return results;
@@ -713,6 +739,7 @@ public class CRISValidator {
                         final String id = el.getAttribute("id");
                         results.add("oai:" + repoIdentifier.get() + ":" + el.getLocalName() + "s/" + id);
                         results.add("oai:" + repoIdentifier.get() + ":" + id);
+                        results.add(x.getHeader().getIdentifier());
                     } else {
                         // make the test trivially satisfied for records with no metadata
                         results.add(x.getHeader().getIdentifier());
@@ -727,8 +754,8 @@ public class CRISValidator {
         }
     }
 
-    private static Map<String, CERIFNode> recordsByName = new HashMap<>();
-    private static Map<String, CERIFNode> recordsByOaiIdentifier = new HashMap<>();
+    private Map<String, CERIFNode> recordsByName = new HashMap<>();
+    private Map<String, CERIFNode> recordsByOaiIdentifier = new HashMap<>();
 
     private CheckingIterable<RecordType> wrapCheckPayloadQNameAndAccummulate(final String expectedElementLocalName, final CheckingIterable<RecordType> checker) {
         return checker.checkForAll(new Predicate<RecordType>() {
@@ -742,7 +769,7 @@ public class CRISValidator {
                         final Element el = (Element) obj;
                         assertTrue("The payload element not in the right namespace", el.getNamespaceURI().startsWith(OPENAIRE_CERIF_XMLNS_PREFIX));
                         assertEquals("The payload element does not have the right local name", expectedElementLocalName, el.getLocalName());
-                        validateMetadataPayload(el);
+                        validateMetadataPayload(el, t.getHeader().getIdentifier());
                         final CERIFNode node = CERIFNode.buildTree(el);
                         recordsByName.put(node.getName(), node);
                         recordsByOaiIdentifier.put(t.getHeader().getIdentifier(), node);
@@ -776,13 +803,16 @@ public class CRISValidator {
                 ruleResults.incrCount();
                 try {
                     lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(node3, oaiIdentifier);
+                } catch (RecordValidationException e) {
+                    ruleResults.incrFailed();
+                    ruleResults.addError(e);
                 } catch (Throwable e) {
                     ruleResults.incrFailed();
                     ruleResults.addError(new ValidationError(e.getMessage(), node3, e));
                 }
             }
         }
-        return ruleResults;
+        return ruleResults.setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
     }
 
     private void lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(final CERIFNode node, final String oaiIdentifier) {
@@ -801,7 +831,10 @@ public class CRISValidator {
         final String name = node.getName();
         if (name.contains("[@id=\"")) {
             final CERIFNode baseNode = recordsByName.get(name);
-            assertNotNull("Record for " + name + " not found, referential integrity violated in " + oaiIdentifier + " (5a)", baseNode);
+            if (baseNode == null) {
+                String message = String.format("Record for %s not found, referential integrity violated in %s (5a)", name, oaiIdentifier);
+                throw new RecordValidationException(oaiIdentifier, name, message);
+            }
             if (!node.isSubsetOf(baseNode)) {
                 final CERIFNode missingNode = node.reportWhatIMiss(baseNode).get();
                 fail("Violation of (5b) in " + oaiIdentifier + ":\n" + node + "is not subset of\n" + baseNode + "missing is\n" + missingNode);
@@ -814,7 +847,9 @@ public class CRISValidator {
      *
      * @param el the metadata payload top element
      */
-    protected void validateMetadataPayload(final Element el) {
+    protected void validateMetadataPayload(final Element el, final String identifier) {
+        final String localName = el.getLocalName();
+        final String id = el.getAttribute("id");
         final String elString = el.getLocalName() + "[@id=\"" + el.getAttribute("id") + "\"]";
         final Validator validator = getValidatorSchema().newValidator();
         try {
@@ -824,7 +859,7 @@ public class CRISValidator {
 
                 @Override
                 public void warning(final SAXParseException exception) throws SAXException {
-                    // do nothing
+                    logger.warn("In {}: {}", elString, exception.getMessage());
                 }
 
                 @Override
@@ -850,7 +885,9 @@ public class CRISValidator {
             validator.setErrorHandler(errorHandler);
             validator.validate(new DOMSource(el));
         } catch (final SAXException | IOException e) {
-            fail("While validating element " + elString + ": " + e);
+            if(identifier == null)
+                throw new RecordValidationException(createIdentifier(localName, id), localName, e);
+            throw new RecordValidationException(identifier, localName, e);
         }
     }
 }

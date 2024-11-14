@@ -7,6 +7,7 @@ import org.eurocris.openaire.cris.validator.service.JobDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -83,17 +84,22 @@ public class StatusListener implements TaskListener {
 
     private int createScore(List<RuleResults> ruleResults, String type) {
         float score = 0;
+        List<Float> ruleScores = new ArrayList<>();
         if (ruleResults != null && !ruleResults.isEmpty()) {
             for (RuleResults rResults : ruleResults) {
                 if (rResults.getRule().getType().equalsIgnoreCase(type)) {
                     // rule score: (total - failed) / total
-                    float ruleScore = 0;
+                    float ruleScore;
                     if (rResults.getCount() != 0) {
-                        ruleScore = (float) (rResults.getCount() - rResults.getFailed()) / rResults.getCount();
-                        score += ruleScore * rResults.getRule().getWeight();
+                        ruleScore = ((float) rResults.getCount() - rResults.getFailed()) / rResults.getCount();
+                        ruleScores.add(ruleScore * rResults.getRule().getWeight());
                     }
                 }
             }
+            for (Float ruleScore : ruleScores) {
+                score += ruleScore;
+            }
+            score = score / ruleScores.size() * 100;
         }
         return Math.round(score);
     }
@@ -103,7 +109,7 @@ public class StatusListener implements TaskListener {
         if (results != null && !results.isEmpty()) {
             for (RuleResults ruleResults : results) {
                 if (ruleResults.getRule().getType().equalsIgnoreCase(CRISValidator.CONTENT)) {
-                    records += ruleResults.getCount();
+                    records += (int) ruleResults.getCount();
                 }
             }
         }

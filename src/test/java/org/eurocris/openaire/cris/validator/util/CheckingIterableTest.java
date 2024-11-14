@@ -1,11 +1,12 @@
 package org.eurocris.openaire.cris.validator.util;
 
+import org.eurocris.openaire.cris.validator.exception.RecordException;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-
-import org.junit.Test;
 
 /**
  * Unit tests for {@link CheckingIterable}. Mostly tested on Strings.
@@ -160,7 +161,7 @@ public class CheckingIterableTest {
 	/**
 	 * Test that three entries, two of which are a duplicate, are recognized as a non-unique list.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test( expected = RecordException.class)
 	public void testThreeEntriesUniqueFind() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
@@ -182,7 +183,7 @@ public class CheckingIterableTest {
 	/**
 	 * Test that the uniqueness check disregards nulls, non-unique values listed.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test( expected = RecordException.class)
 	public void testThreeEntriesUniqueFindDisregardsNulls() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", null, null, "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );

@@ -1,7 +1,11 @@
 package org.eurocris.openaire.cris.validator.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import junit.framework.AssertionFailedError;
+import org.eurocris.openaire.cris.validator.exception.RecordException;
+import org.eurocris.openaire.cris.validator.exception.RecordValidationException;
+import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -9,10 +13,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import junit.framework.AssertionFailedError;
-import org.eurocris.openaire.cris.validator.model.RuleResults;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * An {@link Iterable} collection that will check certain facts either upon returning every object or after all objects have been iterated.
@@ -36,10 +38,20 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 		while ( it.hasNext() ) {
 			try {
 				it.next();
-			} catch (Throwable e) {
+			} catch (AssertionError e) {
 				logger.debug(e.getMessage(), e);
 				results.incrFailed();
 				results.addError(e);
+			} catch (RecordException re) {
+				results.incrFailed();
+				results.addError(re);
+			} catch (RecordValidationException rve) {
+				results.incrFailed();
+				results.addError(rve);
+			} catch (Throwable e) {
+				logger.error(e.getMessage(), e);
+				results.incrFailed();
+//				results.addError(e);
 			}
 			++n;
 		}
@@ -253,7 +265,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 						final T obj = parentIterator.next();
 						final boolean match = predicate.test( obj );
 						if ( ! match ) {
-							throw new AssertionFailedError( message + "; object: " + obj );
+							throw new RecordException( obj.toString(), message );
 						}
 						return obj;
 					}
@@ -339,7 +351,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 						final T obj = parentIterator.next();
 						final U val = function.apply( obj );
 						if ( val != null && !seenValues.add( val ) ) {
-							throw new AssertionFailedError( message + "; value: " + val );
+							throw new RecordException(val.toString(), message);
 						}
 						return obj;
 					}

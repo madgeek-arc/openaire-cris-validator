@@ -1,6 +1,7 @@
 package org.eurocris.openaire.cris.validator.model;
 
 public class ValidationError {
+    private String identifier;
     private String message;
     private Object object;
     private Throwable throwable;
@@ -22,6 +23,22 @@ public class ValidationError {
         this.message = message;
         this.object = object;
         this.throwable = throwable;
+    }
+
+    public ValidationError(String identifier, String message, Object object, Throwable throwable) {
+        this.identifier = identifier;
+        this.message = message;
+        this.object = object;
+        this.throwable = throwable;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public ValidationError setIdentifier(String identifier) {
+        this.identifier = identifier;
+        return this;
     }
 
     public String getMessage() {

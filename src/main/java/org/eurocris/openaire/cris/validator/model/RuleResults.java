@@ -1,15 +1,15 @@
 package org.eurocris.openaire.cris.validator.model;
 
-import org.openarchives.oai._2.RecordType;
+import org.eurocris.openaire.cris.validator.exception.RecordException;
+import org.eurocris.openaire.cris.validator.exception.RecordValidationException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class RuleResults {
 
     private static final int NUM_ERRORS = 50;
 
+    private Set<String> metadataPrefixSet = new HashSet<>();
     private Rule rule;
     private long count = 0;
     private long failed = 0;
@@ -18,7 +18,8 @@ public class RuleResults {
     public RuleResults() {
     }
 
-    public RuleResults(Rule rule, long count, long failed, List<ValidationError> errors) {
+    public RuleResults(Set<String> metadataPrefixSet, Rule rule, long count, long failed, List<ValidationError> errors) {
+        this.metadataPrefixSet = metadataPrefixSet;
         this.rule = rule;
         this.count = count;
         this.failed = failed;
@@ -36,6 +37,15 @@ public class RuleResults {
         }
     }
 
+    public Set<String> getMetadataPrefixSet() {
+        return metadataPrefixSet;
+    }
+
+    public RuleResults setMetadataPrefixSet(Set<String> metadataPrefixSet) {
+        this.metadataPrefixSet = metadataPrefixSet;
+        return this;
+    }
+
     public void incrCount() {
         this.count++;
     }
@@ -47,6 +57,18 @@ public class RuleResults {
     public void addError(ValidationError error) {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(error);
+        }
+    }
+
+    public void addError(RecordException e) {
+        if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
+            this.errors.add(new ValidationError(e.getIdentifier(), e.getMessage(), null, e));
+        }
+    }
+
+    public void addError(RecordValidationException e) {
+        if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
+            this.errors.add(new ValidationError(e.getIdentifier(), e.getMessage(), e.getElementLocalName(), e));
         }
     }
 
@@ -88,18 +110,16 @@ public class RuleResults {
         this.errors = errors;
     }
 
-    public List<String> getErrorMessages() {
-        List<String> errorMessages = new ArrayList<>();
+    public List<String> getFailedIds() {
+        List<String> failed = new ArrayList<>();
         for (ValidationError error : errors) {
             if (error != null) {
-                if (error.getObject() instanceof RecordType) {
-                    errorMessages.add(((RecordType) error.getObject()).getHeader().getIdentifier());
-                } else if (error.getMessage() != null) {
-                    errorMessages.add(error.getMessage());
+                if (error.getIdentifier() != null) {
+                    failed.add(error.getIdentifier());
                 }
             }
         }
-        return errorMessages;
+        return failed;
     }
 
     public boolean hasErrorMessage(String message) {

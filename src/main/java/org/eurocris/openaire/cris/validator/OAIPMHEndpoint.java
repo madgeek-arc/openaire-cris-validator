@@ -1,48 +1,23 @@
 package org.eurocris.openaire.cris.validator;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.validation.Schema;
-
 import org.eurocris.openaire.cris.validator.http.CompressionHandlingHttpURLConnectionAdapter;
-import org.openarchives.oai._2.DescriptionType;
-import org.openarchives.oai._2.HeaderType;
-import org.openarchives.oai._2.IdentifyType;
-import org.openarchives.oai._2.ListIdentifiersType;
-import org.openarchives.oai._2.ListMetadataFormatsType;
-import org.openarchives.oai._2.ListRecordsType;
-import org.openarchives.oai._2.ListSetsType;
-import org.openarchives.oai._2.OAIPMHerrorType;
-import org.openarchives.oai._2.OAIPMHerrorcodeType;
-import org.openarchives.oai._2.OAIPMHtype;
-import org.openarchives.oai._2.RecordType;
-import org.openarchives.oai._2.ResumptionTokenType;
-import org.openarchives.oai._2.SetType;
+import org.openarchives.oai._2.*;
 import org.openarchives.oai._2_0.oai_identifier.OaiIdentifierType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
+
+import javax.xml.bind.*;
+import javax.xml.validation.Schema;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.*;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * An OAI-PMH 2.0 endpoint client.
@@ -202,7 +177,7 @@ public class OAIPMHEndpoint {
 	 * @throws JAXBException on XML processing error
 	 */
 	@SuppressWarnings( "unchecked")
-	private OAIPMHtype makeConnection( final boolean repoWideRequest, final String verb, final String... params ) throws IOException, SAXException, JAXBException {
+	private OAIPMHtype connect( final boolean repoWideRequest, final String verb, final String... params ) throws IOException, SAXException, JAXBException {
 		final URL url = makeUrl( verb, params );
 		logger.info( "Fetching and validating {}", url.toExternalForm() );
 		final URLConnection conn = handleCompression( url.openConnection() );
@@ -219,6 +194,38 @@ public class OAIPMHEndpoint {
 			checkForErrors( response );
 			return response;
 		}
+	}
+
+	/**
+	 * Contact the data provider with a request and return the parsed response.
+	 * The response must be schema-valid.
+	 * If connection fails it retries up to 5 times.
+	 * @param repoWideRequest true for Identify, ListMetadataFormats and ListSets
+	 * @param verb the verb of the request
+	 * @param params parameters of the request: pairs of ( name, value )
+	 * @return the unmarshalled response
+	 * @throws IOException on network error
+	 * @throws SAXException on XML parsing error
+	 * @throws JAXBException on XML processing error
+	 */
+	private OAIPMHtype makeConnection( final boolean repoWideRequest, final String verb, final String... params ) throws IOException, SAXException, JAXBException {
+		int retries = 5;
+		do {
+			retries--;
+			try {
+				return connect( repoWideRequest, verb, params );
+			} catch (UnmarshalException e) {
+				logger.error( e.getMessage(), e );
+				break;
+			} catch (IOException e) {
+				if (retries == 0) {
+					throw e;
+				} else {
+					logger.error("IOException Error: {} - Retrying..", e.getCause().getMessage());
+				}
+			}
+		} while (retries > 0);
+		return null;
 	}
 
 	private void checkResponseCode( final URLConnection conn ) throws IOException {
@@ -444,9 +451,13 @@ public class OAIPMHEndpoint {
 									innerIterator = ( currentChunk != null ) ? functGetIterable.apply( currentChunk ).iterator() : null;
 									return ( innerIterator != null );
 								} catch ( final RuntimeException e ) {
-									throw e;
+									logger.error(e.getMessage(), e);
+									return false;
+//									throw e;
+								} catch ( final UnmarshalException e ) {
+									throw new IllegalStateException( e.getCause().getMessage(), e.getCause());
 								} catch ( final Throwable t ) {
-									throw new IllegalStateException( t );
+									throw new IllegalStateException( t.getMessage(), t );
 								}
 							}
 						}
