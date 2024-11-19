@@ -149,7 +149,7 @@ public class CRISValidator {
     private final Map<String, MetadataFormatType> metadataFormatsByPrefix = new HashMap<>();
 
     private final Map<String, String> schemaUrlsByNs = new HashMap<>();
-    private final Map<String, String> nssBySchemaUrl = new HashMap<>();
+//    private final Map<String, String> nssBySchemaUrl = new HashMap<>();
 
 
     public static final String USAGE = "USAGE";
@@ -315,7 +315,7 @@ public class CRISValidator {
             final Document doc = getDocumentBuilderFactory().newDocumentBuilder().parse(source.getInputStream());
             final String targetNamespace = doc.getDocumentElement().getAttribute("targetNamespace");
             schemaUrlsByNs.put(targetNamespace, schemaUrl);
-            nssBySchemaUrl.put(schemaUrl, targetNamespace);
+//            nssBySchemaUrl.put(schemaUrl, targetNamespace);
             logger.info("Will use " + schemaUrl + " for namespace " + targetNamespace);
         }
         return getXmlSchemaFactory().newSchema(schemaList.toArray(new Source[0]));
@@ -512,6 +512,7 @@ public class CRISValidator {
                             assertEquals( "The schema does not have the advertised target namespace URI (2j)", metadataNs, targetNsUri );
                         }
                     } catch ( final ParserConfigurationException | SAXException | IOException e ) {
+                        logger.debug(e.getMessage());
                         throw new IllegalStateException( e );
                     }
                     return true;
@@ -885,6 +886,7 @@ public class CRISValidator {
             validator.setErrorHandler(errorHandler);
             validator.validate(new DOMSource(el));
         } catch (final SAXException | IOException e) {
+            logger.debug(e.getMessage());
             if(identifier == null)
                 throw new RecordValidationException(createIdentifier(localName, id), localName, e);
             throw new RecordValidationException(identifier, localName, e);
