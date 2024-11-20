@@ -149,7 +149,6 @@ public class CRISValidator {
     private final Map<String, MetadataFormatType> metadataFormatsByPrefix = new HashMap<>();
 
     private final Map<String, String> schemaUrlsByNs = new HashMap<>();
-//    private final Map<String, String> nssBySchemaUrl = new HashMap<>();
 
 
     public static final String USAGE = "USAGE";
@@ -184,7 +183,6 @@ public class CRISValidator {
             }
             final URL endpointBaseUrl = URI.create(endpointUrl).toURL();
             endpoint = new OAIPMHEndpoint(endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY);
-            metadataFormatsByPrefix.clear();
         }
     }
 
@@ -201,7 +199,6 @@ public class CRISValidator {
     protected CRISValidator(final URL endpointBaseUrl) throws SAXException, IOException, ParserConfigurationException {
         if (endpoint == null || !endpointBaseUrl.toExternalForm().equals(endpoint.getBaseUrl())) {
             endpoint = new OAIPMHEndpoint(endpointBaseUrl, getParserSchema(), CONN_STREAM_FACTORY);
-            metadataFormatsByPrefix.clear();
         }
     }
 
@@ -210,16 +207,14 @@ public class CRISValidator {
      * The parameter {@param id} must be unique among simultaneous validations.
      *
      * @param endpointUrl the endpoint to perform the validation.
-     * @param id          the id of the validation.
      * @param rules       a map of rule names and {@link Rule rules}
      * @throws IOException
      * @throws SAXException
      * @throws ParserConfigurationException
      */
-    public CRISValidator(String endpointUrl, String id, Map<String, Rule> rules) throws IOException, SAXException, ParserConfigurationException {
+    public CRISValidator(String endpointUrl, Map<String, Rule> rules) throws IOException, SAXException, ParserConfigurationException {
         this.rules = rules;
-        String logDir = String.format("data/%s/%s_%s", getFormatedDateAsString(), id, endpointUrl);
-        endpoint = new OAIPMHEndpoint(URI.create(endpointUrl).toURL(), getParserSchema(), new FileLoggingConnectionStreamFactory(logDir));
+        endpoint = new OAIPMHEndpoint(URI.create(endpointUrl).toURL(), getParserSchema(), new NoLogsConnectionStreamFactory());
     }
 
     /**
@@ -230,9 +225,12 @@ public class CRISValidator {
      */
     public RuleResults invokeMethod(Method method) {
         ValidationError error = null;
+        String set = method.getName().split("_(Check)?")[1];
         try {
             Object results = method.invoke(this);
             if (results != null) {
+                ((RuleResults) results).setSet(set);
+                ((RuleResults) results).setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
                 ((RuleResults) results).setRule(rules.get(method.getName()));
                 return (RuleResults) results;
             }
@@ -244,7 +242,7 @@ public class CRISValidator {
             logger.error(e.getTargetException().getMessage(), e.getTargetException());
             error = new ValidationError(e.getTargetException().getMessage());
         }
-        return new RuleResults(metadataFormatsByPrefix.keySet(), rules.get(method.getName()), 0, 0, Collections.singletonList(error));
+        return new RuleResults(metadataFormatsByPrefix.keySet(), set, rules.get(method.getName()), 0, 0, Collections.singletonList(error));
     }
 
     /**
@@ -456,7 +454,7 @@ public class CRISValidator {
         if ( serviceAcronym.isPresent() && repoIdentifier.isPresent() ) {
             assertEquals( "Service acronym is not the same as the repository identifier (1c)", serviceAcronym.get(), repoIdentifier.get() );
         }
-        return checker.getResults().setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
+        return checker.getResults();
     }
 
     /**
@@ -467,7 +465,6 @@ public class CRISValidator {
     @Test
     public RuleResults check010_MetadataFormats() throws Exception {
         RuleResults results = new RuleResults();
-        metadataFormatsByPrefix.clear();
         CheckingIterable<MetadataFormatType> checker = CheckingIterable.over(endpoint.callListMetadataFormats().getMetadataFormat());
         checker = checker.checkUnique(MetadataFormatType::getMetadataPrefix, "Metadata prefix not unique (2d)");
         checker = checker.checkUnique(MetadataFormatType::getMetadataNamespace, "Metadata namespace not unique (2e)");
@@ -485,7 +482,7 @@ public class CRISValidator {
         final int nOpenAireMetadataFormats = metadataFormatsByPrefix.size();
         logger.info("Having " + nOpenAireMetadataFormats + " OpenAIRE CRIS metadata formats (out of the total " + nMetadataFormats + " metadata formats)");
         results.add(checker.getResults());
-        return results.setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
+        return results;
     }
 
     private CheckingIterable<MetadataFormatType> wrapCheckMetadataFormatPresent( final CheckingIterable<MetadataFormatType> parent ) {
@@ -576,7 +573,7 @@ public class CRISValidator {
         checker = wrapCheckSetPresent( checker, OPENAIRE_CRIS_EQUIPMENTS__SET_SPEC, "OpenAIRE_CRIS_equipments");
         checker.run();
         results.add(checker.getResults());
-        return results.setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
+        return results;
     }
 
     private CheckingIterable<SetType> wrapCheckSetPresent(final CheckingIterable<SetType> parent, final String expectedSetSpec, final String expectedSetName) {
@@ -608,7 +605,6 @@ public class CRISValidator {
             final Iterable<RecordType> records = endpoint.callListRecords(prefix, set, null, null);
             final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, localName);
             checker.run();
-            results.getMetadataPrefixSet().add(prefix);
             results.add(checker.getResults());
         }
         return results;
@@ -813,7 +809,7 @@ public class CRISValidator {
                 }
             }
         }
-        return ruleResults.setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
+        return ruleResults;
     }
 
     private void lookForCERIFObjectsAndCheckReferentialIntegrityAndFunctionalDependency(final CERIFNode node, final String oaiIdentifier) {
@@ -938,5 +934,13 @@ class FileLoggingConnectionStreamFactory implements OAIPMHEndpoint.ConnectionStr
             inputStream = new FileSavingInputStream(inputStream, logDirPath.resolve(logFilename));
         }
         return inputStream;
+    }
+}
+
+class NoLogsConnectionStreamFactory implements OAIPMHEndpoint.ConnectionStreamFactory {
+
+    @Override
+    public InputStream makeInputStream(final URLConnection conn) throws IOException {
+        return conn.getInputStream();
     }
 }

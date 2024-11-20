@@ -10,6 +10,7 @@ public class RuleResults {
     private static final int NUM_ERRORS = 50;
 
     private Set<String> metadataPrefixSet = new HashSet<>();
+    private String set;
     private Rule rule;
     private long count = 0;
     private long failed = 0;
@@ -18,8 +19,9 @@ public class RuleResults {
     public RuleResults() {
     }
 
-    public RuleResults(Set<String> metadataPrefixSet, Rule rule, long count, long failed, List<ValidationError> errors) {
+    public RuleResults(Set<String> metadataPrefixSet, String set, Rule rule, long count, long failed, List<ValidationError> errors) {
         this.metadataPrefixSet = metadataPrefixSet;
+        this.set = set;
         this.rule = rule;
         this.count = count;
         this.failed = failed;
@@ -27,10 +29,10 @@ public class RuleResults {
     }
 
     public void add(RuleResults results) {
-        if (this.rule == null) {
-            this.rule = results.getRule();
+        if (this.set == null) {
+            this.set = results.getSet();
         }
-        if (Objects.equals(this.rule, results.getRule())) {
+        if (Objects.equals(this.set, results.getSet())) {
             this.count += results.getCount();
             this.failed += results.getFailed();
             this.errors.addAll(results.getErrors());
@@ -76,6 +78,14 @@ public class RuleResults {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(new ValidationError(throwable.getMessage(), null, throwable));
         }
+    }
+
+    public String getSet() {
+        return set;
+    }
+
+    public void setSet(String set) {
+        this.set = set;
     }
 
     public Rule getRule() {

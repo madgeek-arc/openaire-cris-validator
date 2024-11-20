@@ -56,7 +56,7 @@ public class Job {
 
     public Job() {
         this.id = UUID.randomUUID().hashCode();
-        this.status = "pending";
+        this.status = Status.PENDING.getKey();
         this.dateSubmitted = new Date();
     }
 
@@ -65,7 +65,7 @@ public class Job {
         this.user = user;
 
         this.id = UUID.randomUUID().hashCode();
-        this.status = "pending";
+        this.status = Status.PENDING.getKey();
         this.dateSubmitted = new Date();
     }
 

@@ -31,7 +31,7 @@ public class CRISValidatorTask implements Runnable {
         final List<RuleResults> results = new LinkedList<>();
         Arrays.stream(listeners).forEach(s -> s.started(results));
         try {
-            CRISValidator object = new CRISValidator(job.getUrl(), String.valueOf(job.getId()), ruleDao.getRuleMap());
+            CRISValidator object = new CRISValidator(job.getUrl(), ruleDao.getRuleMap());
             object.runTests(results, () -> {Arrays.stream(listeners).forEach(s -> s.updated(results)); return null;} );
             Arrays.stream(listeners).forEach(s -> s.finished(results));
         } catch (Exception e) {
