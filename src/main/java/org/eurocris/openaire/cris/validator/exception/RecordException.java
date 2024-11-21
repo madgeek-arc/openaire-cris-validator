@@ -1,16 +1,18 @@
 package org.eurocris.openaire.cris.validator.exception;
 
-public class RecordException extends RuntimeException {
+import org.eurocris.openaire.cris.validator.Error;
 
-    private String identifier;
+public class RecordException extends ValidationException {
 
-    public RecordException(String identifier, String message) {
-        super(message  + "; value: " + identifier);
+    private final String identifier;
+
+    public RecordException(Error error, String identifier, String message) {
+        super(error, message  + "; value: " + identifier);
         this.identifier = identifier;
     }
 
-    public RecordException(String identifier, String message, Throwable cause) {
-        super(message  + "; value: " + identifier, cause);
+    public RecordException(Error error, String identifier, String message, Throwable cause) {
+        super(error, message  + "; value: " + identifier, cause);
         this.identifier = identifier;
     }
 

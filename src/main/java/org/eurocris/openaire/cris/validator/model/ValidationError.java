@@ -1,6 +1,9 @@
 package org.eurocris.openaire.cris.validator.model;
 
+import org.eurocris.openaire.cris.validator.Error;
+
 public class ValidationError {
+    private String error;
     private String identifier;
     private String message;
     private Object object;
@@ -9,23 +12,26 @@ public class ValidationError {
     public ValidationError() {
     }
 
-    public ValidationError(String message) {
+    public ValidationError(Error error, String message) {
+        this.error = error.getMessage();
         this.message = message;
         this.throwable = new Exception(message);
     }
 
-    public ValidationError(String message, Object object) {
-        this.message = message;
-        this.object = object;
+    public ValidationError(Error error, Throwable throwable) {
+        this.error = error.getMessage();
+        this.message = throwable.getCause() != null ? throwable.getCause().getMessage() : throwable.getMessage();
     }
 
-    public ValidationError(String message, Object object, Throwable throwable) {
+    public ValidationError(Error error, String message, Object object, Throwable throwable) {
+        this.error = error.getMessage();
         this.message = message;
         this.object = object;
         this.throwable = throwable;
     }
 
-    public ValidationError(String identifier, String message, Object object, Throwable throwable) {
+    public ValidationError(Error error, String identifier, String message, Object object, Throwable throwable) {
+        this.error = error.getMessage();
         this.identifier = identifier;
         this.message = message;
         this.object = object;
@@ -39,6 +45,14 @@ public class ValidationError {
     public ValidationError setIdentifier(String identifier) {
         this.identifier = identifier;
         return this;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 
     public String getMessage() {

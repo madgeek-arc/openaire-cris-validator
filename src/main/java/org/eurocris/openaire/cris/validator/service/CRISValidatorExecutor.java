@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.listener.StatusListener;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,13 +19,11 @@ public class CRISValidatorExecutor implements JobExecutor {
     private static final Logger logger = LogManager.getLogger(CRISValidatorExecutor.class);
     private ExecutorService executor;
     private final JobDao jobDao;
-    private final RuleDao ruleDao;
 
 
-    public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, JobDao jobDao, RuleDao ruleDao) {
+    public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, JobDao jobDao) {
         executor = Executors.newFixedThreadPool(threadNum);
         this.jobDao = jobDao;
-        this.ruleDao = ruleDao;
     }
 
     @PreDestroy
@@ -50,7 +47,7 @@ public class CRISValidatorExecutor implements JobExecutor {
     @Override
     public Job submit(Job job) {
         TaskListener listener = new StatusListener(job, jobDao);
-        executor.submit(() -> new CRISValidatorTask(job, jobDao, ruleDao, listener).run());
+        executor.submit(() -> new CRISValidatorTask(job, jobDao, listener).run());
         return job;
     }
 

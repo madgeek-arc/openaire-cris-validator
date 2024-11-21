@@ -1,9 +1,10 @@
 package org.eurocris.openaire.cris.validator.util;
 
-import junit.framework.AssertionFailedError;
+import org.eurocris.openaire.cris.validator.Error;
 import org.eurocris.openaire.cris.validator.exception.RecordException;
 import org.eurocris.openaire.cris.validator.exception.RecordValidationException;
-import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.exception.ValidationException;
+import org.eurocris.openaire.cris.validator.model.ValidationResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,9 +13,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * An {@link Iterable} collection that will check certain facts either upon returning every object or after all objects have been iterated.
@@ -26,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 public abstract class CheckingIterable<T> implements Iterable<T> {
 
 	private static final Logger logger = LoggerFactory.getLogger(CheckingIterable.class);
-	protected RuleResults results = new RuleResults();
+	protected ValidationResults results = new ValidationResults();
 
 	/**
 	 * Iterate through the elements and call {@link #close()} at the end.
@@ -58,6 +56,10 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 		results.setCount(n);
 		try {
 			close();
+		} catch (ValidationException e) {
+			logger.debug(e.getMessage(), e);
+			results.incrFailed();
+			results.addError(e);
 		} catch (Throwable e) {
 			logger.debug(e.getMessage(), e);
 			results.incrFailed();
@@ -75,7 +77,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * Retrieve validation results.
 	 * @return
 	 */
-	public RuleResults getResults() {
+	public ValidationResults getResults() {
 		return results;
 	}
 
@@ -139,15 +141,15 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 		};		
 	}
 
-	/**
-	 * Build a CheckingIterable which checks that the collection contains at least one element for which the given predicate is true.
-	 * @param predicate the condition to look for
-	 * @param message to signal when no matching element is found
-	 * @return this CheckingIterable wrapped to check the condition
-	 */
-	public CheckingIterable<T> checkContains( final Predicate<T> predicate, final String message ) {
-		return checkContains( predicate, new AssertionFailedError( message ) );
-	}
+//	/**
+//	 * Build a CheckingIterable which checks that the collection contains at least one element for which the given predicate is true.
+//	 * @param predicate the condition to look for
+//	 * @param error to signal when no matching element is found
+//	 * @return this CheckingIterable wrapped to check the condition
+//	 */
+//	public CheckingIterable<T> checkContains( final Predicate<T> predicate, final ValidationException error ) {
+//		return checkContains( predicate, error );
+//	}
 
 	/**
 	 * Build a CheckingIterable which checks that the collection contains at least one element for which the given predicate is true.
@@ -155,7 +157,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * @param error to raise when no matching element is found
 	 * @return this CheckingIterable wrapped to check the condition
 	 */
-	public CheckingIterable<T> checkContains( final Predicate<T> predicate, final Error error ) {
+	public CheckingIterable<T> checkContains( final Predicate<T> predicate, final RuntimeException error ) {
 		final CheckingIterable<T> parentChecker = this;
 		return new CheckingIterable<T>() {
 
@@ -180,11 +182,11 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	/**
 	 * Build a CheckingIterable which checks that the collection contains at least one element for which the given predicate is true.
 	 * @param predicate the condition to look for
-	 * @param collectionSpec how the collection description is to be phrased in the error message
-	 * @param matchingObjectSpec how the matching object description is to be phrased in the error message
+	 * @param errorNone error message when none found
+	 * @param errorMultiple error message when multiple found
 	 * @return this CheckingIterable wrapped to check the condition
 	 */
-	public CheckingIterable<T> checkContainsOne( final Predicate<T> predicate, final String collectionSpec, final String matchingObjectSpec ) {
+	public CheckingIterable<T> checkContainsOne(final Predicate<T> predicate, final Error errorNone, final Error errorMultiple ) {
 		final CheckingIterable<T> parentChecker = this;
 		return new CheckingIterable<T>() {
 
@@ -200,10 +202,10 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 				parentChecker.close();
 				final long cnt = mci.getCount();
 				if ( cnt == 0L ) {
-					throw new AssertionError( collectionSpec + " does not contain " + matchingObjectSpec );
+					throw new RecordException( errorNone, null, errorNone.getMessage() );
 				}
 				if ( cnt > 1L ) {
-					throw new AssertionError( collectionSpec + " contains " + cnt + " instances of " + matchingObjectSpec );
+					throw new RecordException( errorMultiple, null, errorMultiple.getMessage() );
 				}
 			}
 
@@ -243,10 +245,10 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	/**
 	 * Build a CheckingIterable which checks that the given predicate is true for all elements of the collection.
 	 * @param predicate the condition to look for
-	 * @param message to signal when no matching element is found
+	 * @param error to signal when no matching element is found
 	 * @return this CheckingIterable wrapped to check the condition
 	 */
-	public CheckingIterable<T> checkForAll( final Predicate<T> predicate, final String message ) {
+	public CheckingIterable<T> checkForAll( final Predicate<T> predicate, final Error error ) {
 		final CheckingIterable<T> parentChecker = this;
 		return new CheckingIterable<T>() {
 
@@ -265,7 +267,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 						final T obj = parentIterator.next();
 						final boolean match = predicate.test( obj );
 						if ( ! match ) {
-							throw new RecordException( obj.toString(), message );
+							throw new RecordException( error, obj.toString(), error.getMessage() );
 						}
 						return obj;
 					}
@@ -285,21 +287,24 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 	 * Build a CheckingIterable which checks that two values are equal for all elements of the collection.
 	 * @param expectedFunction the function to construct the expected value
 	 * @param realFunction the function extract the actual value
-	 * @param message the message to signal when the actual value is not equal to the expected one
+	 * @param error the error to signal when the actual value is not equal to the expected one
 	 * @return this CheckingIterable wrapped to check the condition
 	 */
-	public <U> CheckingIterable<T> checkForAllEquals( final Function<T, U> expectedFunction, final Function<T, U> realFunction, final String message ) {
+	public <U> CheckingIterable<T> checkForAllEquals( final Function<T, U> expectedFunction, final Function<T, U> realFunction, final Error error ) {
 		return checkForAll( new Predicate<T>() {
 
 			@Override
 			public boolean test( final T obj ) {
 				final U expectedValue = expectedFunction.apply( obj );
 				final U realValue = realFunction.apply( obj );
-				assertEquals( message, expectedValue, realValue );
-				return true;
+				if ( expectedValue.equals( realValue ) ) {
+					return true;
+				} else {
+					throw new RecordException( error, realValue.toString(), error.getMessage() + "; object: " + obj );
+				}
 			}
 			
-		}, null );
+		}, Error.UNEXPECTED_VALUE );
 	}
 
 	/**
@@ -318,20 +323,23 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
             {
                 final Set<U> expectedValues = expectedFunction.apply( obj );
                 final U realValue = realFunction.apply( obj );
-                assertTrue( message + "; object: " + obj, expectedValues.contains( realValue ) );
-                return true;
+				if ( expectedValues.contains( realValue ) ) {
+					return true;
+				} else {
+					throw new RecordException( Error.valueOf(message), realValue.toString(), message + "; object: " + obj );
+				}
             }
 
-        }, null );
+        }, Error.EXPECTED_VALUE_MISSING );
     }
 	   
 	/**
 	 * Build a CheckingIterable which checks that the values of a function for all elements of the collection are unique.
 	 * @param function the mapping from the collection element to the key that should be unique
-	 * @param message the message to write on a non-unique key
+	 * @param error the error of a non-unique key
 	 * @return this CheckingIterable wrapped to check the condition
 	 */
-	public <U> CheckingIterable<T> checkUnique( final Function<T, U> function, final String message ) {
+	public <U> CheckingIterable<T> checkUnique( final Function<T, U> function, final Error error ) {
 		final CheckingIterable<T> parentChecker = this;
 		final Set<U> seenValues = new HashSet<>();
 		return new CheckingIterable<T>() {
@@ -351,7 +359,7 @@ public abstract class CheckingIterable<T> implements Iterable<T> {
 						final T obj = parentIterator.next();
 						final U val = function.apply( obj );
 						if ( val != null && !seenValues.add( val ) ) {
-							throw new RecordException(val.toString(), message);
+							throw new RecordException( error, val.toString(), error.getMessage() );
 						}
 						return obj;
 					}

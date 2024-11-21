@@ -19,7 +19,7 @@
             <xs:documentation>The Digital Object Identifier</xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string">
-            <xs:pattern value="10\.\d{4,}(\.\d+)*/[^\s]+">
+            <xs:pattern value="(https\:\/\/doi\.org\/)?(10\.\d{4,}(\.\d+)*/[^\s]+)">
                 <xs:annotation>
                     <xs:documentation source="https://www.crossref.org/blog/dois-and-matching-regular-expressions/"/>
                 </xs:annotation>

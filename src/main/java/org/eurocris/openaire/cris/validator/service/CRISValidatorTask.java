@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.CRISValidator;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
 import org.eurocris.openaire.cris.validator.model.Job;
-import org.eurocris.openaire.cris.validator.model.RuleResults;
+import org.eurocris.openaire.cris.validator.model.ValidationResults;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -16,22 +16,20 @@ public class CRISValidatorTask implements Runnable {
     private static final Logger logger = LogManager.getLogger(CRISValidatorTask.class);
     private final Job job;
     private final JobDao jobDao;
-    private final RuleDao ruleDao;
     private final TaskListener[] listeners;
 
-    public CRISValidatorTask(Job job, JobDao jobDao, RuleDao ruleDao, TaskListener... listeners) {
+    public CRISValidatorTask(Job job, JobDao jobDao, TaskListener... listeners) {
         this.job = job;
         this.jobDao = jobDao;
-        this.ruleDao = ruleDao;
         this.listeners = listeners;
     }
 
     @Override
     public void run() {
-        final List<RuleResults> results = new LinkedList<>();
+        final List<ValidationResults> results = new LinkedList<>();
         Arrays.stream(listeners).forEach(s -> s.started(results));
         try {
-            CRISValidator object = new CRISValidator(job.getUrl(), ruleDao.getRuleMap());
+            CRISValidator object = new CRISValidator(job.getUrl());
             object.runTests(results, () -> {Arrays.stream(listeners).forEach(s -> s.updated(results)); return null;} );
             Arrays.stream(listeners).forEach(s -> s.finished(results));
         } catch (Exception e) {
@@ -39,10 +37,10 @@ public class CRISValidatorTask implements Runnable {
             Arrays.stream(listeners).forEach(l -> l.failed(results));
         }
         if (results != null && !results.isEmpty()) {
-            for (RuleResults result : results) {
+            for (ValidationResults result : results) {
                 StringBuilder errors = new StringBuilder();
                 result.getErrors().forEach(e -> errors.append(e.getMessage()).append('\n'));
-                logger.info("Method: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getRule().getRuleMethodName(),
+                logger.info("Set: {}  -> Records: {} | Failed: {}\nErrors:\n{}", result.getSet(),
                         result.getCount(), result.getFailed(), errors);
             }
             logger.info("Job[{}]\n\tUsage Score: {}\n\tContent Score: {}", job.getId(), job.getUsageScore(), job.getContentScore());

@@ -3,7 +3,7 @@ package org.eurocris.openaire.cris.validator.util;
 /**
  * An ad-hoc exception for the {@link CheckingIterableTest}.
  */
-public abstract class MyException extends Error {
+public abstract class MyException extends RuntimeException {
 
 	private static final long serialVersionUID = 9075739310570035562L;
 

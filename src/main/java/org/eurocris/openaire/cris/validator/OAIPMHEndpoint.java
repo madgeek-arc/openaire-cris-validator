@@ -250,7 +250,7 @@ public class OAIPMHEndpoint {
 		// in the light of RFC7303 section 9.2 we accept "application/xml" as equivalent
 		final String contentType = conn.getContentType();
 		if (!( contentType.startsWith( "text/xml" ) || contentType.startsWith( "application/xml" ) )) {
-			logger.error( "The Content-Type doesn't start with 'text/xml' or 'application/xml': " + contentType );
+			logger.error( "The Content-Type doesn't start with 'text/xml' or 'application/xml': {}", contentType );
 		}
 	}
 

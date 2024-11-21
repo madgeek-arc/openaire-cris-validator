@@ -1,5 +1,6 @@
 package org.eurocris.openaire.cris.validator.util;
 
+import org.eurocris.openaire.cris.validator.Error;
 import org.eurocris.openaire.cris.validator.exception.RecordException;
 import org.junit.Test;
 
@@ -154,7 +155,7 @@ public class CheckingIterableTest {
 	public void testThreeEntriesUniqueOk() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
-		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
+		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), Error.GENERAL_ERROR );
 		runChecker( list, c1 );
 	}
 
@@ -165,7 +166,7 @@ public class CheckingIterableTest {
 	public void testThreeEntriesUniqueFind() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
-		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
+		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), Error.GENERAL_ERROR );
 		runChecker( list, c1 );
 	}
 
@@ -176,7 +177,7 @@ public class CheckingIterableTest {
 	public void testThreeEntriesUniqueOkDisregardsNulls() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", null, null, "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
-		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
+		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), Error.GENERAL_ERROR );
 		runChecker( list, c1 );
 	}
 
@@ -187,7 +188,7 @@ public class CheckingIterableTest {
 	public void testThreeEntriesUniqueFindDisregardsNulls() throws Throwable {
 		final List<String> list = Arrays.asList( "hello", null, null, "hello", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
-		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), "Non unique word" );
+		final CheckingIterable<String> c1 = c0.checkUnique( Function.identity(), Error.GENERAL_ERROR );
 		runChecker( list, c1 );
 	}
 
@@ -198,18 +199,18 @@ public class CheckingIterableTest {
 	public void testForAllEqualsOk() throws Throwable {
 		final List<String> list = Collections.singletonList( "beautiful" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
-		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, "Entries should be lowercased" );
+		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, Error.GENERAL_ERROR );
 		runChecker( list, c1 );
 	}
 
 	/**
 	 * Test that {@link CheckingIterable#checkForAllEquals(Function, Function, String)} works: the case of non-equality.
 	 */
-	@Test( expected = AssertionError.class)
+	@Test( expected = RecordException.class)
 	public void testForAllEqualsFail() throws Throwable {
 		final List<String> list = Collections.singletonList( "BeautiFul" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
-		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, "Entries should be lowercased" );
+		final CheckingIterable<String> c1 = c0.checkForAllEquals( String::toLowerCase, String::toString, Error.GENERAL_ERROR );
 		runChecker( list, c1 );
 	}
 
@@ -221,7 +222,7 @@ public class CheckingIterableTest {
 		final List<String> list = Arrays.asList( "hello", "beautiful", "world" );
 		final CheckingIterable<String> c0 = CheckingIterable.over( list );
 		final CheckingIterable<String> c1 = c0.map( String::toUpperCase );
-		final CheckingIterable<String> c2 = c1.checkForAllEquals( String::toUpperCase, String::toString, "Entries should be uppercased" );
+		final CheckingIterable<String> c2 = c1.checkForAllEquals( String::toUpperCase, String::toString, Error.GENERAL_ERROR );
 		runChecker( list, c2 );
 	}
 	
