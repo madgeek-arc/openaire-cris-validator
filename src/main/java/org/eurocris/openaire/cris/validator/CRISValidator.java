@@ -492,21 +492,21 @@ public class CRISValidator {
                         logger.info( "Metadata format prefix " + mf.getMetadataPrefix() + " with ns " + mf.getMetadataNamespace() );
                         // Added github as source of schema when checking
                         if ( ! (schemaUrl.startsWith( OPENAIRE_CERIF_SCHEMAS_ROOT ) || schemaUrl.startsWith( "https://github.com/openaire/guidelines-cris-managers/" ) ) ) {
-                            throw new ValidationException(Error.GENERAL_ERROR, "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)");
+                            throw new ValidationException(Error.SCHEMA_NOT_OFFICIAL, "Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)");
                         }
                         if ( ! schemaUrl.endsWith( "/" + OPENAIRE_CERIF_SCHEMA_FILENAME ) ) {
-                            throw new ValidationException(Error.GENERAL_ERROR, "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)");
+                            throw new ValidationException(Error.SCHEMA_FILE_ERROR, "The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)");
                         }
                         final String localSchemaUrl = schemaUrlsByNs.get( metadataNs );
                         if ( localSchemaUrl == null) {
-                            throw new ValidationException(Error.GENERAL_ERROR, "This validator does not cover the metadata namespace " + metadataNs + " (2g)");
+                            throw new ValidationException(Error.METADATA_NAMESPACE_NOT_COVERED, "This validator does not cover the metadata namespace " + metadataNs + " (2g)");
                         }
                         if ( !localSchemaUrl.contains( "/current/" ) ) {
                             final Document doc = db.parse( localSchemaUrl );
                             final Element schemaRootEl = doc.getDocumentElement();
                             final String targetNsUri = schemaRootEl.getAttribute( "targetNamespace" );
                             if ( ! metadataNs.equals(targetNsUri) ) {
-                                throw new ValidationException(Error.GENERAL_ERROR, "The schema does not have the advertised target namespace URI (2j)");
+                                throw new ValidationException(Error.ADVERTISED_TARGET_NAMESPACE_MISSING, "The schema does not have the advertised target namespace URI (2j)");
                             }
                         }
                     } catch ( final ParserConfigurationException | SAXException | IOException e ) {

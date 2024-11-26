@@ -1,5 +1,8 @@
 package org.eurocris.openaire.cris.validator;
 
+import static org.eurocris.openaire.cris.validator.CRISValidator.OPENAIRE_CERIF_SCHEMAS_ROOT;
+import static org.eurocris.openaire.cris.validator.CRISValidator.OPENAIRE_CERIF_SCHEMA_FILENAME;
+
 public enum Error {
     SET_SPEC_NOT_UNIQUE("setSpec not unique"),
 
@@ -9,6 +12,10 @@ public enum Error {
     METADATA_PREFIX_NOT_UNIQUE("Metadata prefix not unique (2d)"),
     METADATA_NAMESPACE_NOT_UNIQUE("Metadata namespace not unique (2e)"),
     METADATA_SCHEMA_LOCATION_NOT_UNIQUE("Metadata schema location not unique (2f)"),
+    METADATA_NAMESPACE_NOT_COVERED("This validator does not cover the metadata namespace (2g)"),
+    SCHEMA_NOT_OFFICIAL("Please reference the official XML Schema at " + OPENAIRE_CERIF_SCHEMAS_ROOT + " (2h)"),
+    SCHEMA_FILE_ERROR("The schema file should be " + OPENAIRE_CERIF_SCHEMA_FILENAME + " (2i)"),
+    ADVERTISED_TARGET_NAMESPACE_MISSING("The schema does not have the advertised target namespace URI (2j)"),
     METADATA_FORMAT_UNSPECIFIED("No metadata format specified"),
 
     OAI_IDENTIFIER_UNEXPECTED("OAI identifier other than expected"),
@@ -31,8 +38,8 @@ public enum Error {
     CONSTRAINT_VIOLATION("Constraint Violation"),
     METADATA_MISSING("Metadata missing from OAI-PMH record"),
     IDENTIFIER_NOT_UNIQUE("Record identifier not unique"),
-    VIOLATION_5A_REVERENTIAL_INTEGRITY("Referential integrity violation"),
-    VIOLATION_5B(""),
+    VIOLATION_5A_REVERENTIAL_INTEGRITY("Referential integrity violation (5a)"),
+    VIOLATION_5B("Violation (5b)"),
 
     GENERAL_ERROR("General error");
 
