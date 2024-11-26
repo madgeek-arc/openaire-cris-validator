@@ -1,41 +1,41 @@
 package org.eurocris.openaire.cris.validator.service;
 
-import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.model.CrisJob;
 
 import java.util.Optional;
 
 public interface JobExecutor {
 
     /**
-     * Get a submitted {@link Job} using its ID {@param jobId}.
+     * Get a submitted {@link CrisJob} using its ID {@param jobId}.
      *
      * @param jobId
      * @return
      */
-    Optional<Job> getJob(String jobId);
+    Optional<CrisJob> getJob(Long jobId);
 
     /**
-     * Get the status of a submitted {@link Job} using its ID {@param jobId}.
+     * Get the status of a submitted {@link CrisJob} using its ID {@param jobId}.
      *
      * @param jobId
      * @return
      */
-    String getStatus(String jobId);
+    String getStatus(Long jobId);
 
     /**
      * Submits {@param job} for execution.
      *
-     * @param job
-     * @return {@link Job}
+     * @param crisJob
+     * @return {@link CrisJob}
      */
-    Job submit(Job job);
+    CrisJob submit(CrisJob crisJob);
 
     /**
      * Submit a new job using the {@param url} and {@param user} values.
      *
      * @param url
      * @param user
-     * @return {@link Job}
+     * @return {@link CrisJob}
      */
-    Job submit(String url, String user);
+    CrisJob submit(String url, String user);
 }

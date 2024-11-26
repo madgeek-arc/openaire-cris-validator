@@ -1,5 +1,6 @@
 package org.eurocris.openaire.cris.validator.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eurocris.openaire.cris.validator.Error;
 
 public class ValidationError {
@@ -7,6 +8,8 @@ public class ValidationError {
     private String identifier;
     private String message;
     private Object object;
+
+    @JsonIgnore
     private Throwable throwable;
 
     public ValidationError() {

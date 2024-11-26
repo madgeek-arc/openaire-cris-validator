@@ -1,6 +1,6 @@
 package org.eurocris.openaire.cris.validator.service;
 
-import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.model.CrisJob;
 
 import java.util.Date;
 import java.util.List;
@@ -9,20 +9,20 @@ import java.util.Optional;
 public interface JobDao {
 
     /**
-     * Get a specific {@link Job}.
+     * Get a specific {@link CrisJob}.
      *
      * @param id Identifier of the Job
-     * @return {@link Optional<Job>}
+     * @return {@link Optional< CrisJob >}
      */
-    Optional<Job> get(String id);
+    Optional<CrisJob> get(Long id);
 
     /**
      * Get all user Jobs.
      *
      * @param userId User identifier
-     * @return {@link List<Job>}
+     * @return {@link List< CrisJob >}
      */
-    List<Job> getJobs(String userId);
+    List<CrisJob> getJobs(String userId);
 
     /**
      * Get user Jobs having a specific status.
@@ -31,7 +31,7 @@ public interface JobDao {
      * @param validationStatus
      * @return
      */
-    List<Job> getJobs(String userId, String validationStatus);
+    List<CrisJob> getJobs(String userId, String validationStatus);
 
     /**
      * Get user Jobs using paging.
@@ -41,7 +41,7 @@ public interface JobDao {
      * @param size   the size of objects returned
      * @return
      */
-    List<Job> getJobs(String userId, int offset, int size);
+    List<CrisJob> getJobs(String userId, int offset, int size);
 
     /**
      * Get user Jobs using date filters.
@@ -51,7 +51,7 @@ public interface JobDao {
      * @param dateTo   maximum Job submission date
      * @return
      */
-    List<Job> getJobs(String userId, Date dateFrom, Date dateTo);
+    List<CrisJob> getJobs(String userId, Date dateFrom, Date dateTo);
 
     /**
      * Get user Jobs using date and status filters.
@@ -62,29 +62,29 @@ public interface JobDao {
      * @param dateFrom         minimum Job submission date
      * @param dateTo           maximum Job submission date
      * @param validationStatus the current status of the Job.
-     * @return {@link List} of {@param size} {@link Job} objects starting from {@param offset}.
+     * @return {@link List} of {@param size} {@link CrisJob} objects starting from {@param offset}.
      */
-    List<Job> getJobs(String userId, int offset, int size, Date dateFrom, Date dateTo, String validationStatus);
+    List<CrisJob> getJobs(String userId, int offset, int size, Date dateFrom, Date dateTo, String validationStatus);
 
     /**
      * Get all Jobs.
      *
-     * @return {@link List<Job>}
+     * @return {@link List< CrisJob >}
      */
-    List<Job> getAll();
+    List<CrisJob> getAll();
 
     /**
-     * Saves the {@link Job} {@param t}.
+     * Saves the {@link CrisJob} {@param t}.
      *
      * @param t
      */
-    void save(Job t);
+    CrisJob save(CrisJob t);
 
     /**
-     * Deletes the {@link Job} {@param t}.
+     * Deletes the {@link CrisJob} {@param t}.
      *
      * @param t
      */
-    void delete(Job t);
+    void delete(CrisJob t);
 
 }

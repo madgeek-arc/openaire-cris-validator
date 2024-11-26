@@ -1,26 +1,54 @@
 package org.eurocris.openaire.cris.validator.model;
 
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Parameter;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Job {
+@Entity
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+public class CrisJob {
 
-    private int id;
+    @Id
+    @GeneratedValue(generator = "negative-sequence")
+    @GenericGenerator(
+            name = "negative-sequence",
+            strategy = "org.hibernate.id.enhanced.SequenceStyleGenerator",
+            parameters = {
+                    @Parameter(name = "sequence_name", value = "negative_seq"),
+                    @Parameter(name = "initial_value", value = "-1"),
+                    @Parameter(name = "increment_size", value = "-1")
+            }
+    )
+    @Column(updatable = false, nullable = false)
+    private Long id;
+
     private String url;
-    private String user;
+    private String admin;
     private String status;
     private int usageScore = 0;
     private int contentScore = 0;
-    private int recordsTested = 0;
+    private int totalRecords = 0;
 
     private String usageJobStatus;
     private String contentJobStatus;
 
     private Date dateSubmitted;
-    private Date dateStarted = null;
+    private Date dateStarted;
     private Date dateFinished = null;
 
+    @Type(type = "jsonb")
+    @Column(columnDefinition = "jsonb")
     private List<ValidationResults> validationResults = new LinkedList<>();
+
 
     public enum Status {
         PENDING("pending"),
@@ -54,26 +82,26 @@ public class Job {
         }
     }
 
-    public Job() {
-        this.id = UUID.randomUUID().hashCode();
+    public CrisJob() {
         this.status = Status.PENDING.getKey();
         this.dateSubmitted = new Date();
+        this.dateStarted = new Date();
     }
 
-    public Job(String url, String user) {
+    public CrisJob(String url, String admin) {
         this.url = url;
-        this.user = user;
+        this.admin = admin;
 
-        this.id = UUID.randomUUID().hashCode();
         this.status = Status.PENDING.getKey();
         this.dateSubmitted = new Date();
+        this.dateStarted = new Date();
     }
 
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -85,12 +113,12 @@ public class Job {
         this.url = url;
     }
 
-    public String getUser() {
-        return user;
+    public String getAdmin() {
+        return admin;
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public void setAdmin(String user) {
+        this.admin = user;
     }
 
     public String getStatus() {
@@ -117,12 +145,12 @@ public class Job {
         this.contentScore = contentScore;
     }
 
-    public int getRecordsTested() {
-        return recordsTested;
+    public int getTotalRecords() {
+        return totalRecords;
     }
 
-    public void setRecordsTested(int recordsTested) {
-        this.recordsTested = recordsTested;
+    public void setTotalRecords(int totalRecords) {
+        this.totalRecords = totalRecords;
     }
 
     public String getUsageJobStatus() {
@@ -175,6 +203,6 @@ public class Job {
 
     public String getReport() {
         return String.format("%nJob [%s]%nurl:\t\t\t%s%nuser:\t\t\t%s%nstatus:\t\t\t%s%nusage score:\t\t%s%ncontent score:\t\t%s%ndate submitted:\t%s%ndate started:\t%s%ndate finished:\t%s%n%n%n",
-                        this.getId(), this.getUrl(), this.getUser(), this.getStatus(), this.getUsageScore(), this.getContentScore(), this.getDateSubmitted(), this.getDateStarted(), this.getDateFinished());
+                this.getId(), this.getUrl(), this.getAdmin(), this.getStatus(), this.getUsageScore(), this.getContentScore(), this.getDateSubmitted(), this.getDateStarted(), this.getDateFinished());
     }
 }

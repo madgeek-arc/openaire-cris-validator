@@ -3,7 +3,7 @@ package org.eurocris.openaire.cris.validator.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.config.AppConfig;
-import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.model.CrisJob;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,13 +46,13 @@ public class CRISValidatorExecutorTest {
 
     @Test
     public void testJobId() {
-        Job myJob = new Job(URI.create("").toString(), "test");
-        assert myJob.getId() != 0;
+        CrisJob myCrisJob = new CrisJob(URI.create("").toString(), "test");
+        assert myCrisJob.getId() != null;
     }
 
     @Test
     public void testJobPending() {
-        Job myJob = new Job(URI.create("").toString(), "test");
-        assert Job.Status.PENDING.getKey().equals(myJob.getStatus());
+        CrisJob myCrisJob = new CrisJob(URI.create("").toString(), "test");
+        assert CrisJob.Status.PENDING.getKey().equals(myCrisJob.getStatus());
     }
 }

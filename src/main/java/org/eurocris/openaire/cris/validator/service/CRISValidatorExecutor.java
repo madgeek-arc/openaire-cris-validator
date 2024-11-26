@@ -4,11 +4,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eurocris.openaire.cris.validator.listener.StatusListener;
 import org.eurocris.openaire.cris.validator.listener.TaskListener;
-import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.model.CrisJob;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PreDestroy;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,9 +22,13 @@ public class CRISValidatorExecutor implements JobExecutor {
     private final JobDao jobDao;
 
 
-    public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, JobDao jobDao) {
+    public CRISValidatorExecutor(@Value("${executor.threads:8}") int threadNum, Map<String, JobDao> jobDao) {
         executor = Executors.newFixedThreadPool(threadNum);
-        this.jobDao = jobDao;
+        if (jobDao.containsKey("DBJobDao")) {
+            this.jobDao = jobDao.get("DBJobDao");
+        } else {
+            this.jobDao = jobDao.get("mapJobDao");
+        }
     }
 
     @PreDestroy
@@ -32,12 +37,12 @@ public class CRISValidatorExecutor implements JobExecutor {
     }
 
     @Override
-    public Optional<Job> getJob(String jobId) {
+    public Optional<CrisJob> getJob(Long jobId) {
         return jobDao.get(jobId);
     }
 
     @Override
-    public String getStatus(String jobId) {
+    public String getStatus(Long jobId) {
         if (jobDao.get(jobId).isPresent()) {
             return jobDao.get(jobId).get().getStatus();
         }
@@ -45,15 +50,15 @@ public class CRISValidatorExecutor implements JobExecutor {
     }
 
     @Override
-    public Job submit(Job job) {
-        TaskListener listener = new StatusListener(job, jobDao);
-        executor.submit(() -> new CRISValidatorTask(job, jobDao, listener).run());
-        return job;
+    public CrisJob submit(CrisJob crisJob) {
+        TaskListener listener = new StatusListener(crisJob, jobDao);
+        executor.submit(() -> new CRISValidatorTask(crisJob, jobDao, listener).run());
+        return crisJob;
     }
 
     @Override
-    public Job submit(String url, String user) {
-        Job job = new Job(url, user);
-        return submit(job);
+    public CrisJob submit(String url, String user) {
+        CrisJob crisJob = new CrisJob(url, user);
+        return submit(crisJob);
     }
 }

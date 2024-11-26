@@ -13,19 +13,19 @@ public class ValidationResults {
     public static final String USAGE = "USAGE";
     public static final String CONTENT = "CONTENT";
 
-    private Set<String> metadataPrefixSet = new HashSet<>();
+    private String metadataPrefix;
     private String set;
     private String type = CONTENT;
     private long count = 0;
     private long failed = 0;
-    private Map<Error, Long> rulesFailedCounts = new HashMap<>();
+    private Map<String, Long> rulesFailedCounts = new HashMap<>();
     private List<ValidationError> errors = new ArrayList<>();
 
     public ValidationResults() {
     }
 
-    public ValidationResults(Set<String> metadataPrefixSet, String set, String type, long count, long failed, List<ValidationError> errors) {
-        this.metadataPrefixSet = metadataPrefixSet;
+    public ValidationResults(String metadataPrefix, String set, String type, long count, long failed, List<ValidationError> errors) {
+        this.metadataPrefix = metadataPrefix;
         this.set = set;
         this.type = type;
         this.count = count;
@@ -41,18 +41,18 @@ public class ValidationResults {
             this.count += results.getCount();
             this.failed += results.getFailed();
             this.errors.addAll(results.getErrors());
-            for (Map.Entry<Error, Long> ruleCount : results.getRulesFailedCounts().entrySet()) {
+            for (Map.Entry<String, Long> ruleCount : results.getRulesFailedCounts().entrySet()) {
                 this.rulesFailedCounts.compute(ruleCount.getKey(), (k, v) -> v == null ? ruleCount.getValue() : v + ruleCount.getValue());
             }
         }
     }
 
-    public Set<String> getMetadataPrefixSet() {
-        return metadataPrefixSet;
+    public String getMetadataPrefix() {
+        return metadataPrefix;
     }
 
-    public ValidationResults setMetadataPrefixSet(Set<String> metadataPrefixSet) {
-        this.metadataPrefixSet = metadataPrefixSet;
+    public ValidationResults setMetadataPrefix(String metadataPrefix) {
+        this.metadataPrefix = metadataPrefix;
         return this;
     }
 
@@ -68,35 +68,35 @@ public class ValidationResults {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(error);
         }
-        rulesFailedCounts.merge(Error.GENERAL_ERROR, 1L, Long::sum);
+        rulesFailedCounts.merge(Error.GENERAL_ERROR.getMessage(), 1L, Long::sum);
     }
 
     public void addError(ValidationException e) {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(new ValidationError(e.getError(), null, e.getMessage(), null, e));
         }
-        rulesFailedCounts.merge(e.getError(), 1L, Long::sum);
+        rulesFailedCounts.merge(e.getError().getMessage(), 1L, Long::sum);
     }
 
     public void addError(RecordException e) {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(new ValidationError(e.getError(), e.getIdentifier(), e.getMessage(), null, e));
         }
-        rulesFailedCounts.merge(e.getError(), 1L, Long::sum);
+        rulesFailedCounts.merge(e.getError().getMessage(), 1L, Long::sum);
     }
 
     public void addError(RecordValidationException e) {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(new ValidationError(e.getError(), e.getIdentifier(), e.getMessage(), e.getElementLocalName(), e));
         }
-        rulesFailedCounts.merge(e.getError(), 1L, Long::sum);
+        rulesFailedCounts.merge(e.getError().getMessage(), 1L, Long::sum);
     }
 
     public void addError(Throwable throwable) {
         if (this.errors.size() < NUM_ERRORS) { // save only the first X errors
             this.errors.add(new ValidationError(Error.GENERAL_ERROR, throwable.getMessage(), null, throwable));
         }
-        rulesFailedCounts.merge(Error.GENERAL_ERROR, 1L, Long::sum);
+        rulesFailedCounts.merge(Error.GENERAL_ERROR.getMessage(), 1L, Long::sum);
     }
 
     public String getSet() {
@@ -133,11 +133,11 @@ public class ValidationResults {
         this.failed = failed;
     }
 
-    public Map<Error, Long> getRulesFailedCounts() {
+    public Map<String, Long> getRulesFailedCounts() {
         return rulesFailedCounts;
     }
 
-    public void setRulesFailedCounts(Map<Error, Long> rulesFailedCounts) {
+    public void setRulesFailedCounts(Map<String, Long> rulesFailedCounts) {
         this.rulesFailedCounts = rulesFailedCounts;
     }
 

@@ -249,7 +249,10 @@ public class OAIPMHEndpoint {
 		// Although the OAI-PMH 2.0 spec, section 3.1.2.1, prescribes only "text/xml",
 		// in the light of RFC7303 section 9.2 we accept "application/xml" as equivalent
 		final String contentType = conn.getContentType();
-		if (!( contentType.startsWith( "text/xml" ) || contentType.startsWith( "application/xml" ) )) {
+		if (contentType == null) {
+			logger.error( "Content-Type is null" );
+		}
+		else if (!( contentType.startsWith( "text/xml" ) || contentType.startsWith( "application/xml" ) )) {
 			logger.error( "The Content-Type doesn't start with 'text/xml' or 'application/xml': {}", contentType );
 		}
 	}

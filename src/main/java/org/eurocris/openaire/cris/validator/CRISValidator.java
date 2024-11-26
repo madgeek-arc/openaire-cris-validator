@@ -193,7 +193,6 @@ public class CRISValidator {
 
     /**
      * Set up a CRIS Validation for the URL {@param endpointUrl}.
-     * The parameter {@param id} must be unique among simultaneous validations.
      *
      * @param endpointUrl the endpoint to perform the validation.
      * @throws IOException
@@ -217,7 +216,6 @@ public class CRISValidator {
             Object results = method.invoke(this);
             if (results != null) {
                 ((ValidationResults) results).setSet(set);
-                ((ValidationResults) results).setMetadataPrefixSet(metadataFormatsByPrefix.keySet());
                 return (ValidationResults) results;
             }
         } catch (AssertionError | ValidationException e) {
@@ -229,7 +227,7 @@ public class CRISValidator {
             logger.error(e.getTargetException().getMessage(), e.getTargetException());
             error = new ValidationError(Error.GENERAL_ERROR, e.getTargetException().getMessage());
         }
-        return new ValidationResults(metadataFormatsByPrefix.keySet(), set, null, 0, 0, Collections.singletonList(error));
+        return new ValidationResults(null, set, null, 0, 0, Collections.singletonList(error));
     }
 
     /**
@@ -613,6 +611,7 @@ public class CRISValidator {
             final CheckingIterable<RecordType> checker = buildCommonCheckersChain(records, localName);
             checker.run();
             results.add(checker.getResults());
+            results.setMetadataPrefix(prefix);
         }
         return results;
     }
@@ -866,7 +865,7 @@ public class CRISValidator {
 
                 @Override
                 public void warning(final SAXParseException exception) throws SAXException {
-                    logger.warn("In {}: {}", elString, exception.getMessage());
+                    logger.debug("In {}: {}", elString, exception.getMessage());
                 }
 
                 @Override
@@ -879,7 +878,7 @@ public class CRISValidator {
                     final String msg = exception.getMessage();
                     if (msg.startsWith("cvc-pattern-valid: ")) {
                         patternValidErrorSignalled = true;
-                        logger.error("In " + elString + ": " + msg);
+                        logger.debug("In " + elString + ": " + msg);
                     } else {
                         if (!(patternValidErrorSignalled && msg.startsWith("cvc-complex-type.2.2: "))) {
                             throw exception;

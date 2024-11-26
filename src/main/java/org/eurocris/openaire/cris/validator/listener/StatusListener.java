@@ -1,6 +1,6 @@
 package org.eurocris.openaire.cris.validator.listener;
 
-import org.eurocris.openaire.cris.validator.model.Job;
+import org.eurocris.openaire.cris.validator.model.CrisJob;
 import org.eurocris.openaire.cris.validator.model.ValidationResults;
 import org.eurocris.openaire.cris.validator.service.JobDao;
 import org.slf4j.Logger;
@@ -13,72 +13,71 @@ import java.util.List;
 public class StatusListener implements TaskListener {
 
     private static final Logger logger = LoggerFactory.getLogger(StatusListener.class);
-    private Job job;
-    private JobDao dao;
+    private CrisJob crisJob;
+    private final JobDao dao;
 
-    public StatusListener(Job job, JobDao dao) {
-        this.job = job;
+    public StatusListener(CrisJob crisJob, JobDao dao) {
+        this.crisJob = crisJob;
         this.dao = dao;
-        dao.save(job);
     }
 
     @Override
     public void started(final List<ValidationResults> results) {
-        job.setUsageJobStatus(Job.Status.ONGOING.getKey());
-        job.setContentJobStatus(Job.Status.ONGOING.getKey());
-        job.setStatus(Job.Status.ONGOING.getKey());
-        job.setDateStarted(new Date());
-        job.setRuleResults(results);
-        dao.save(job);
-        logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
+        crisJob.setUsageJobStatus(CrisJob.Status.ONGOING.getKey());
+        crisJob.setContentJobStatus(CrisJob.Status.ONGOING.getKey());
+        crisJob.setStatus(CrisJob.Status.ONGOING.getKey());
+        crisJob.setDateStarted(new Date());
+        crisJob.setRuleResults(results);
+        crisJob = dao.save(crisJob);
+        logger.info("Job[{}] -> {}", crisJob.getId(), crisJob.getStatus());
     }
 
     @Override
     public void updated(final List<ValidationResults> results) {
         if (results.size() == 3) {
-            job.setUsageJobStatus(Job.Status.FINISHED.getKey());
+            crisJob.setUsageJobStatus(CrisJob.Status.FINISHED.getKey());
             int usageScore = createScore(results, ValidationResults.USAGE);
-            job.setUsageScore(usageScore);
+            crisJob.setUsageScore(usageScore);
             if (usageScore <= 50) {
-                job.setUsageJobStatus(Job.Status.FAILED.getKey());
+                crisJob.setUsageJobStatus(CrisJob.Status.FAILED.getKey());
             }
         }
-        job.setRecordsTested(recordsTested(results));
-        job.setContentScore(createScore(results, ValidationResults.CONTENT));
-        job.setRuleResults(results);
-        dao.save(job);
-        logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
+        crisJob.setTotalRecords(recordsTested(results));
+        crisJob.setContentScore(createScore(results, ValidationResults.CONTENT));
+        crisJob.setRuleResults(results);
+        crisJob = dao.save(crisJob);
+        logger.info("Job[{}] -> {}", crisJob.getId(), crisJob.getStatus());
     }
 
     @Override
     public void finished(final List<ValidationResults> results) {
-        job.setUsageJobStatus(Job.Status.FINISHED.getKey());
-        job.setContentJobStatus(Job.Status.FINISHED.getKey());
-        job.setStatus(Job.Status.SUCCESSFUL.getKey());
-        job.setDateFinished(new Date());
-        job.setRuleResults(results);
-        job.setRecordsTested(recordsTested(results));
-        job.setUsageScore(createScore(results, ValidationResults.USAGE));
-        job.setContentScore(createScore(results, ValidationResults.CONTENT));
-        if (job.getUsageScore() <= 50 || job.getContentScore() <= 50) {
-            job.setStatus(Job.Status.FAILED.getKey());
+        crisJob.setUsageJobStatus(CrisJob.Status.FINISHED.getKey());
+        crisJob.setContentJobStatus(CrisJob.Status.FINISHED.getKey());
+        crisJob.setStatus(CrisJob.Status.SUCCESSFUL.getKey());
+        crisJob.setDateFinished(new Date());
+        crisJob.setRuleResults(results);
+        crisJob.setTotalRecords(recordsTested(results));
+        crisJob.setUsageScore(createScore(results, ValidationResults.USAGE));
+        crisJob.setContentScore(createScore(results, ValidationResults.CONTENT));
+        if (crisJob.getUsageScore() <= 50 || crisJob.getContentScore() <= 50) {
+            crisJob.setStatus(CrisJob.Status.FAILED.getKey());
         }
-        dao.save(job);
-        logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
+        crisJob = dao.save(crisJob);
+        logger.info("Job[{}] -> {}", crisJob.getId(), crisJob.getStatus());
     }
 
     @Override
     public void failed(final List<ValidationResults> results) {
-        job.setUsageJobStatus(Job.Status.FAILED.getKey());
-        job.setContentJobStatus(Job.Status.FAILED.getKey());
-        job.setStatus(Job.Status.FAILED.getKey());
-        job.setDateFinished(new Date());
-        job.setRuleResults(results);
-        job.setRecordsTested(recordsTested(results));
-        job.setUsageScore(createScore(results, ValidationResults.USAGE));
-        job.setContentScore(createScore(results, ValidationResults.CONTENT));
-        dao.save(job);
-        logger.info("Job[{}] -> {}", job.getId(), job.getStatus());
+        crisJob.setUsageJobStatus(CrisJob.Status.FAILED.getKey());
+        crisJob.setContentJobStatus(CrisJob.Status.FAILED.getKey());
+        crisJob.setStatus(CrisJob.Status.FAILED.getKey());
+        crisJob.setDateFinished(new Date());
+        crisJob.setRuleResults(results);
+        crisJob.setTotalRecords(recordsTested(results));
+        crisJob.setUsageScore(createScore(results, ValidationResults.USAGE));
+        crisJob.setContentScore(createScore(results, ValidationResults.CONTENT));
+        crisJob = dao.save(crisJob);
+        logger.info("Job[{}] -> {}", crisJob.getId(), crisJob.getStatus());
     }
 
     private int createScore(List<ValidationResults> validationResults, String type) {
