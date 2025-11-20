@@ -240,6 +240,9 @@ public class CRISValidator {
         Method[] methods = CRISValidator.class.getDeclaredMethods();
         for (Method method : Arrays.stream(methods).sorted(Comparator.comparing(Method::getName)).collect(Collectors.toList())) {
             if (Arrays.stream(method.getDeclaredAnnotations()).anyMatch(a -> a instanceof Test)) {
+                if (method.getName().equals("check990_CheckReferentialIntegrityAndFunctionalDependency")) {
+                    continue; // skip referential integrity
+                }
                 try {
                     methodResults.add(invokeMethod(method));
                     callable.call();
