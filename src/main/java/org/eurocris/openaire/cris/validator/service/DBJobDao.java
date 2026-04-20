@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -21,11 +20,7 @@ import java.util.Optional;
 public class DBJobDao implements JobDao {
 
     @PersistenceContext(unitName = "crisEntityManager")
-    private final EntityManager entityManager;
-
-    public DBJobDao(EntityManagerFactory emf) {
-        this.entityManager = emf.createEntityManager();
-    }
+    private EntityManager entityManager;
 
 
     private TypedQuery<CrisJob> getJobsOfAdmin(String userId) {
@@ -52,7 +47,7 @@ public class DBJobDao implements JobDao {
 
     @Override
     public List<CrisJob> getJobs(String userId, String validationStatus) {
-        if (validationStatus.equals("all")) {
+        if (validationStatus == null || validationStatus.equals("all")) {
             return getJobs(userId);
         }
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -106,6 +101,6 @@ public class DBJobDao implements JobDao {
     @Override
     @Transactional(transactionManager = "crisTransactionManager")
     public void delete(CrisJob t) {
-        entityManager.remove(t);
+        entityManager.remove(entityManager.contains(t) ? t : entityManager.merge(t));
     }
 }
